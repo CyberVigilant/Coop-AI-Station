@@ -1,0 +1,90 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total_opportunities }}</div>
+            <div class="stat-label">Total Opportunities</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total_students }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value" style="color:#FF8147;">{{ pending_submissions }}</div>
+            <div class="stat-label">Pending Submissions</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-danger">{{ pending_reports }}</div>
+            <div class="stat-label">Pending Reports</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick links -->
+<div class="row g-3 mb-4">
+    <div class="col-auto">
+        <a href="{% url 'admin_ai_validations' %}?result=pending" class="btn btn-sm"
+           style="background:#FF8147;color:#fff;">
+            <i class="bi bi-send-check me-1"></i>Review Submissions
+        </a>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'admin_add_opportunity' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-plus-circle me-1"></i>Add Opportunity
+        </a>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'admin_reports' %}?status=pending" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-flag me-1"></i>Review Reports
+        </a>
+    </div>
+</div>
+
+<!-- Recent Audit Log -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-bold">Recent Activity</span>
+            <a href="{% url 'admin_audit_log' %}" class="small text-decoration-none" style="color:#FF8147;">View all</a>
+        </div>
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Admin</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                    <th class="pe-4">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_audit %}
+                <tr>
+                    <td class="ps-4">{{ log.admin.display_name|default:"—" }}</td>
+                    <td><span class="badge bg-light text-dark fw-normal">{{ log.action }}</span></td>
+                    <td>{{ log.target_label|default:"—" }}</td>
+                    <td class="pe-4 text-muted small">{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No activity yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

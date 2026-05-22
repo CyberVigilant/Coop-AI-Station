@@ -1,0 +1,705 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}AI Validations{% endblock %}
+{% block page_title %}AI Validations{% endblock %}
+{% block nav_ai_validations %}active{% endblock %}
+
+{% block content %}
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total }}</div>
+            <div class="stat-label">Total AI Reviews</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-success">{{ total_pass }}</div>
+            <div class="stat-label">Auto-Approved</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-danger">{{ total_fail }}</div>
+            <div class="stat-label">Auto-Rejected</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value" style="color:#FF8147;">{{ total_unsure }}</div>
+            <div class="stat-label">Flagged for Review</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Status Monitor ────────────────────────────────────────────────────── -->
+
+<!-- Button -->
+<form method="post" action="{% url 'admin_monitor_opportunities' %}" class="mb-3" id="monitor-form">
+    {% csrf_token %}
+    <button type="submit" id="monitor-btn" class="btn btn-sm btn-outline-primary rounded-pill px-4">
+        <i class="bi bi-radar me-1"></i> Monitor Open Opportunities
+    </button>
+    <span id="monitor-running" class="text-muted small ms-3" style="display:none;">
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+        Running… <span id="monitor-progress-text"></span> — do not close the tab.
+    </span>
+</form>
+
+<!-- ── Monitor Schedule ───────────────────────────────────────────────────── -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center"
+                 style="width:48px;height:48px;background:rgba(13,110,253,.12);">
+                <i class="bi bi-clock text-primary fs-4"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1">Automatic Monitoring Schedule</h6>
+                <p class="text-muted small mb-3">
+                    Configure the Status Monitor to run automatically at a set time. Changes take effect immediately without restarting the server.
+                </p>
+
+                <form method="post" action="{% url 'admin_save_monitor_schedule' %}">
+                    {% csrf_token %}
+
+                    <div class="row g-3 align-items-end">
+
+                        <!-- Enable toggle -->
+                        <div class="col-auto">
+                            <div class="form-check form-switch mb-0 pt-1">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="monitorScheduleEnabled" name="enabled"
+                                       {% if monitor_schedule and monitor_schedule.enabled %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold small" for="monitorScheduleEnabled">
+                                    Enable Automatic Monitoring
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small fw-semibold mb-1">Frequency</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="frequency"
+                                           id="mFreqDaily" value="daily"
+                                           {% if not monitor_schedule or monitor_schedule.frequency == 'daily' %}checked{% endif %}
+                                           onchange="toggleMonitorDayPicker()">
+                                    <label class="form-check-label small" for="mFreqDaily">Daily</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="frequency"
+                                           id="mFreqWeekly" value="weekly"
+                                           {% if monitor_schedule and monitor_schedule.frequency == 'weekly' %}checked{% endif %}
+                                           onchange="toggleMonitorDayPicker()">
+                                    <label class="form-check-label small" for="mFreqWeekly">Weekly</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Day of week (shown only for weekly) -->
+                        <div class="col-12 col-md-auto" id="monitorDayPickerWrap"
+                             style="{% if not monitor_schedule or monitor_schedule.frequency != 'weekly' %}display:none;{% endif %}">
+                            <label class="form-label small fw-semibold mb-1" for="monitorDayOfWeek">Day</label>
+                            <select class="form-select form-select-sm" name="day_of_week" id="monitorDayOfWeek" style="min-width:130px;">
+                                {% for day in day_names %}
+                                <option value="{{ forloop.counter0 }}"
+                                    {% if monitor_schedule and monitor_schedule.day_of_week == forloop.counter0 %}selected{% endif %}>
+                                    {{ day }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Time -->
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small fw-semibold mb-1" for="monitorRunAtTime">At time</label>
+                            <input type="time" class="form-control form-control-sm" name="run_at_time" id="monitorRunAtTime"
+                                   value="{{ monitor_schedule.run_at_time|time:'H:i'|default:'09:00' }}"
+                                   style="min-width:110px;">
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-floppy me-1"></i>Save Schedule
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+
+                <div class="mt-3 small text-muted d-flex align-items-center gap-3 flex-wrap">
+                    <span id="monitor-scheduler-badge">
+                        <span class="spinner-border spinner-border-sm me-1" style="width:.7rem;height:.7rem;"></span>Checking scheduler…
+                    </span>
+                    <span>
+                    {% if monitor_schedule and monitor_schedule.enabled %}
+                        {% if monitor_schedule.next_run %}
+                            <i class="bi bi-calendar-check me-1 text-primary"></i>
+                            Next run: {{ monitor_schedule.next_run|date:"l, M d Y" }} at {{ monitor_schedule.run_at_time|time:"H:i" }}
+                        {% else %}
+                            <i class="bi bi-clock me-1"></i>Schedule enabled — next run not yet calculated.
+                        {% endif %}
+                        {% if monitor_schedule.last_run %}
+                        &nbsp;·&nbsp; Last run: {{ monitor_schedule.last_run|date:"M d, Y H:i" }}
+                        {% endif %}
+                    {% else %}
+                        <i class="bi bi-dash-circle me-1"></i>Automatic monitoring is disabled.
+                    {% endif %}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- History table -->
+<div class="card border-0 shadow-sm rounded-3 mb-3">
+    <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom fw-bold small">
+            <i class="bi bi-clock-history me-1 text-primary"></i>Monitor Run History
+        </div>
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Date &amp; Time</th>
+                    <th>Checked</th>
+                    <th>Auto-Closed</th>
+                    <th>Errors</th>
+                    <th class="pe-4 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ms in monitor_sessions %}
+                <tr>
+                    <td class="ps-4 small fw-semibold">{{ ms.run_at|date:"M d, Y · H:i" }}</td>
+                    <td class="text-muted small">{{ ms.checked }}</td>
+                    <td>
+                        {% if ms.auto_closed > 0 %}
+                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3">{{ ms.auto_closed }}</span>
+                        {% else %}<span class="text-muted small">0</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if ms.errors > 0 %}
+                        <span class="badge rounded-pill bg-secondary-subtle text-muted px-3">{{ ms.errors }}</span>
+                        {% else %}<span class="text-muted small">0</span>{% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 view-results-btn"
+                                data-session="{{ ms.id }}"
+                                hx-get="{% url 'admin_monitor_session_results' ms.id %}"
+                                hx-target="#monitor-results-panel"
+                                hx-swap="innerHTML">
+                            <i class="bi bi-table me-1"></i>View Results
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-5">
+                        <i class="bi bi-radar text-muted" style="font-size:2rem;"></i>
+                        <div class="text-muted mt-2">No monitor runs yet.</div>
+                        <div class="text-muted small">Click "Monitor Open Opportunities" above to start.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Results panel (revealed by HTMX after-swap) -->
+<div id="monitor-results-panel" class="mb-4"></div>
+
+<!-- Filter tabs -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{% url 'admin_ai_validations' %}"
+       class="btn btn-sm {% if result_filter == '' %}btn-dark{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+        All
+    </a>
+    <a href="{% url 'admin_ai_validations' %}?result=pass"
+       class="btn btn-sm {% if result_filter == 'pass' %}btn-success{% else %}btn-outline-success{% endif %} rounded-pill px-3">
+        <i class="bi bi-check-circle me-1"></i>Auto-Approved
+    </a>
+    <a href="{% url 'admin_ai_validations' %}?result=fail"
+       class="btn btn-sm {% if result_filter == 'fail' %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-3">
+        <i class="bi bi-x-circle me-1"></i>Auto-Rejected
+    </a>
+    <a href="{% url 'admin_ai_validations' %}?result=pending"
+       class="btn btn-sm {% if result_filter == 'pending' %}btn-warning{% else %}btn-outline-warning{% endif %} rounded-pill px-3">
+        <i class="bi bi-hourglass-split me-1"></i>Flagged for Review
+    </a>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Opportunity</th>
+                    <th>Company</th>
+                    <th>Submitted By</th>
+                    <th>AI Verdict</th>
+                    <th>Confidence</th>
+                    <th>Reason</th>
+                    <th>Reviewed At</th>
+                    <th>Action</th>
+                    <th class="pe-4 text-end">Raw</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <!-- Opportunity — clicking opens AI detail modal -->
+                    <td class="ps-4 fw-semibold" style="max-width:180px;">
+                        <a class="text-truncate d-block text-dark text-decoration-none"
+                           style="cursor:pointer;"
+                           data-bs-toggle="modal"
+                           data-bs-target="#aiDetailModal"
+                           data-title="{{ row.opp.title }}"
+                           data-verdict="{{ row.sv.result }}"
+                           data-confidence="{{ row.confidence|default:'' }}"
+                           data-reason="{{ row.reason }}"
+                           data-url="{{ row.source_link }}"
+                           data-validated-at="{{ row.sv.validated_at|date:'M d, Y H:i' }}"
+                           data-steps="{{ row.steps_json }}">
+                            {{ row.opp.title }}
+                        </a>
+                        {% if row.opp.category %}
+                        <small class="text-muted fw-normal">{{ row.opp.category.name }}</small>
+                        {% endif %}
+                    </td>
+
+                    <!-- Company -->
+                    <td class="text-muted small">{{ row.opp.company|default:"—" }}</td>
+
+                    <!-- Submitted By -->
+                    <td class="small text-muted">{{ row.submitter_label }}</td>
+
+                    <!-- AI Verdict -->
+                    <td>
+                        {% if row.sv.result == "pass" %}
+                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2">
+                            <i class="bi bi-check-circle-fill me-1"></i>Auto-Approved
+                        </span>
+                        {% elif row.sv.result == "fail" %}
+                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2">
+                            <i class="bi bi-x-circle-fill me-1"></i>Auto-Rejected
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-pill bg-warning-subtle text-warning px-3 py-2">
+                            <i class="bi bi-hourglass-split me-1"></i>Flagged
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Confidence -->
+                    <td style="min-width:100px;">
+                        {% if row.confidence is not None %}
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:6px; min-width:60px;">
+                                {% if row.confidence >= 75 %}
+                                <div class="progress-bar bg-success" style="width:{{ row.confidence }}%"></div>
+                                {% elif row.confidence >= 50 %}
+                                <div class="progress-bar bg-warning" style="width:{{ row.confidence }}%"></div>
+                                {% else %}
+                                <div class="progress-bar bg-danger" style="width:{{ row.confidence }}%"></div>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted fw-semibold" style="white-space:nowrap;">{{ row.confidence }}%</small>
+                        </div>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Reason -->
+                    <td class="text-muted small" style="max-width:260px;">
+                        <span title="{{ row.reason }}">{{ row.reason|truncatechars:90 }}</span>
+                    </td>
+
+                    <!-- Reviewed At -->
+                    <td class="text-muted small" style="white-space:nowrap;">
+                        {{ row.sv.validated_at|date:"M d, Y" }}<br>
+                        <span class="text-muted" style="font-size:.75rem;">{{ row.sv.validated_at|date:"H:i" }}</span>
+                    </td>
+
+                    <!-- Action -->
+                    <td>
+                        {% if row.sv.submission.status == "pending" %}
+                        <div class="d-flex gap-2 justify-content-center">
+                            <form method="post" action="{% url 'admin_approve_submission' row.sv.submission.id %}" class="action-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit"
+                                        class="btn btn-sm btn-success px-3"
+                                        style="border-radius:6px;font-weight:500;min-width:80px;">
+                                    <i class="bi bi-check-lg me-1"></i> Approve
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'admin_reject_submission' row.sv.submission.id %}" class="action-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger px-3"
+                                        style="border-radius:6px;font-weight:500;min-width:80px;">
+                                    <i class="bi bi-x-lg me-1"></i> Reject
+                                </button>
+                            </form>
+                        </div>
+                        {% elif row.sv.submission.status == "approved" %}
+                        <span class="badge bg-success-subtle text-success fw-medium px-3 py-2"
+                              style="border-radius:20px;">
+                            <i class="bi bi-check-circle me-1"></i> Approved
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger fw-medium px-3 py-2"
+                              style="border-radius:20px;">
+                            <i class="bi bi-x-circle me-1"></i> Rejected
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Raw output -->
+                    <td class="pe-4 text-end">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary rounded-3"
+                                data-bs-toggle="modal"
+                                data-bs-target="#rawModal"
+                                data-note="{{ row.sv.note }}"
+                                data-title="{{ row.opp.title }}">
+                            <i class="bi bi-code-slash me-1"></i>Raw
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <i class="bi bi-robot text-muted" style="font-size:2rem;"></i>
+                        <div class="text-muted mt-2">No AI validations yet.</div>
+                        <div class="text-muted small">They will appear here once students start submitting opportunities.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── AI Detail Modal ──────────────────────────────────────────────────────── -->
+<div class="modal fade" id="aiDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom pb-3">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-robot me-2 text-muted"></i>AI Validation Report
+                    </h6>
+                    <small class="text-muted" id="aiModalTitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div class="row g-4">
+
+                    <!-- LEFT: Validation Steps Timeline -->
+                    <div class="col-md-5">
+                        <p class="text-muted small fw-semibold text-uppercase mb-3" style="letter-spacing:.06em;">Validation Steps</p>
+                        <div id="aiModalTimeline" class="ai-timeline"></div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="col-md-1 d-none d-md-flex justify-content-center">
+                        <div style="width:1px;background:#dee2e6;min-height:100%;"></div>
+                    </div>
+
+                    <!-- RIGHT: Verdict Summary -->
+                    <div class="col-md-6">
+                        <p class="text-muted small fw-semibold text-uppercase mb-3" style="letter-spacing:.06em;">Verdict Summary</p>
+
+                        <!-- Verdict badge -->
+                        <div id="aiModalVerdictBadge" class="mb-3"></div>
+
+                        <!-- Confidence -->
+                        <div class="mb-3" id="aiModalConfidenceBlock">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small text-muted">AI Confidence</span>
+                                <span class="fw-bold" id="aiModalConfidencePct" style="font-size:1.3rem;"></span>
+                            </div>
+                            <div class="progress" style="height:8px;">
+                                <div id="aiModalConfidenceBar" class="progress-bar" style="width:0%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="mb-3">
+                            <p class="small text-muted mb-1 fw-semibold">Reason</p>
+                            <p id="aiModalReason" class="small mb-0" style="line-height:1.6;"></p>
+                        </div>
+
+                        <!-- Source URL -->
+                        <div class="mb-3" id="aiModalUrlBlock">
+                            <p class="small text-muted mb-1 fw-semibold">Source URL</p>
+                            <a id="aiModalUrl" href="#" target="_blank" rel="noopener"
+                               class="small text-break" style="word-break:break-all;"></a>
+                        </div>
+
+                        <!-- Validated at -->
+                        <div>
+                            <p class="small text-muted mb-1 fw-semibold">Validated At</p>
+                            <p id="aiModalValidatedAt" class="small text-muted mb-0"></p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Raw Output Modal ─────────────────────────────────────────────────────── -->
+<div class="modal fade" id="rawModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-robot me-2 text-muted"></i>Raw AI Output
+                    </h6>
+                    <small class="text-muted" id="rawModalSubtitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <pre id="rawModalBody"
+                     class="m-0 p-4 rounded-bottom"
+                     style="background:#1a1d23;color:#c9cdd4;font-size:.82rem;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow-y:auto;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* Vertical timeline */
+.ai-timeline { position: relative; padding-left: 28px; }
+.ai-timeline::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 14px;
+    bottom: 14px;
+    width: 2px;
+    background: #dee2e6;
+}
+.ai-step { position: relative; margin-bottom: 20px; }
+.ai-step:last-child { margin-bottom: 0; }
+.ai-step-dot {
+    position: absolute;
+    left: -22px;
+    top: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .72rem;
+    font-weight: 700;
+    border: 2px solid #dee2e6;
+    background: #fff;
+    z-index: 1;
+}
+.ai-step-dot.approved  { background:#d1fae5; border-color:#10b981; color:#065f46; }
+.ai-step-dot.flagged   { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+.ai-step-dot.rejected  { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+.ai-step-dot.skipped   { background:#f3f4f6; border-color:#d1d5db; color:#9ca3af; }
+.ai-step-name  { font-size:.85rem; font-weight:600; line-height:1.3; }
+.ai-step-detail{ font-size:.78rem; color:#6b7280; margin-top:2px; line-height:1.4; }
+.ai-step.skipped .ai-step-name { color: #9ca3af; }
+</style>
+<script>
+/* ── Monitor progress polling ────────────────────────── */
+var _monitorPollInterval = null;
+
+function _updateProgressText(current, total) {
+    var el = document.getElementById('monitor-progress-text');
+    if (el) {
+        el.textContent = total > 0 ? 'opportunity ' + current + ' of ' + total : '';
+    }
+}
+
+function _startMonitorPolling() {
+    if (_monitorPollInterval) return;
+    _monitorPollInterval = setInterval(function () {
+        fetch("{% url 'admin_monitor_progress' %}")
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.running) {
+                    _updateProgressText(data.current, data.total);
+                } else {
+                    clearInterval(_monitorPollInterval);
+                    _monitorPollInterval = null;
+                }
+            })
+            .catch(function () {});
+    }, 2000);
+}
+
+/* Check on page load — resume display if monitor is already running */
+(function () {
+    fetch("{% url 'admin_monitor_progress' %}")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.running) {
+                document.getElementById('monitor-btn').disabled = true;
+                document.getElementById('monitor-running').style.display = '';
+                _updateProgressText(data.current, data.total);
+                _startMonitorPolling();
+            }
+        })
+        .catch(function () {});
+})();
+
+/* ── Monitor button — loading state ─────────────────── */
+document.getElementById('monitor-form').addEventListener('submit', function () {
+    document.getElementById('monitor-btn').disabled = true;
+    document.getElementById('monitor-running').style.display = '';
+    _startMonitorPolling();
+});
+
+/* ── Scheduler live status badge ─────────────────────── */
+(function() {
+    fetch("{% url 'admin_scheduler_status' %}")
+        .then(r => r.json())
+        .then(function(d) {
+            var badge = document.getElementById('monitor-scheduler-badge');
+            if (!badge) return;
+            var monitorJob = d.jobs.find(function(j) { return j.id === 'monitor_opportunities_auto'; });
+            if (!d.running) {
+                badge.innerHTML = '<span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1"><i class="bi bi-x-circle me-1"></i>Scheduler not running — restart the server</span>';
+            } else if (monitorJob) {
+                badge.innerHTML = '<span class="badge bg-success-subtle text-success rounded-pill px-2 py-1"><i class="bi bi-check-circle me-1"></i>Scheduler active · next: ' + (monitorJob.next_run || '?') + '</span>';
+            } else {
+                badge.innerHTML = '<span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Scheduler running but monitor job not registered — save schedule again</span>';
+            }
+        })
+        .catch(function() {
+            var badge = document.getElementById('monitor-scheduler-badge');
+            if (badge) badge.innerHTML = '';
+        });
+})();
+
+/* ── Monitor schedule day picker ─────────────────────── */
+function toggleMonitorDayPicker() {
+    const weekly = document.getElementById('mFreqWeekly').checked;
+    document.getElementById('monitorDayPickerWrap').style.display = weekly ? '' : 'none';
+}
+
+/* ── AI Detail Modal ─────────────────────────────────── */
+document.getElementById("aiDetailModal").addEventListener("show.bs.modal", function (e) {
+    const btn = e.relatedTarget;
+    const title     = btn.dataset.title     || "";
+    const verdict   = btn.dataset.verdict   || "";
+    const confidence= btn.dataset.confidence !== "" ? parseInt(btn.dataset.confidence, 10) : null;
+    const reason    = btn.dataset.reason    || "—";
+    const url       = btn.dataset.url       || "";
+    const validatedAt = btn.dataset.validatedAt || "";
+    let steps = [];
+    try { steps = JSON.parse(btn.dataset.steps); } catch(_) {}
+
+    document.getElementById("aiModalTitle").textContent = title;
+
+    /* Verdict badge */
+    const verdictEl = document.getElementById("aiModalVerdictBadge");
+    const verdictMap = {
+        pass:    { cls: "bg-success-subtle text-success",  icon: "bi-check-circle-fill",  label: "Auto-Approved" },
+        fail:    { cls: "bg-danger-subtle text-danger",    icon: "bi-x-circle-fill",      label: "Auto-Rejected" },
+        pending: { cls: "bg-warning-subtle text-warning",  icon: "bi-hourglass-split",    label: "Flagged for Review" },
+    };
+    const v = verdictMap[verdict] || { cls: "bg-secondary-subtle text-secondary", icon: "bi-question-circle", label: verdict };
+    verdictEl.innerHTML = `<span class="badge rounded-pill ${v.cls} px-3 py-2" style="font-size:.95rem;">
+        <i class="bi ${v.icon} me-1"></i>${v.label}</span>`;
+
+    /* Confidence */
+    const confBlock = document.getElementById("aiModalConfidenceBlock");
+    if (confidence !== null && !isNaN(confidence)) {
+        confBlock.style.display = "";
+        document.getElementById("aiModalConfidencePct").textContent = confidence + "%";
+        const bar = document.getElementById("aiModalConfidenceBar");
+        bar.style.width = confidence + "%";
+        bar.className = "progress-bar " + (confidence >= 75 ? "bg-success" : confidence >= 50 ? "bg-warning" : "bg-danger");
+    } else {
+        confBlock.style.display = "none";
+    }
+
+    /* Reason */
+    document.getElementById("aiModalReason").textContent = reason || "—";
+
+    /* URL */
+    const urlBlock = document.getElementById("aiModalUrlBlock");
+    const urlEl    = document.getElementById("aiModalUrl");
+    if (url) {
+        urlBlock.style.display = "";
+        urlEl.href        = url;
+        urlEl.textContent = url;
+    } else {
+        urlBlock.style.display = "none";
+    }
+
+    /* Validated at */
+    document.getElementById("aiModalValidatedAt").textContent = validatedAt || "—";
+
+    /* Timeline */
+    const timeline = document.getElementById("aiModalTimeline");
+    const dotIcon  = { approved: "✓", flagged: "⚠", rejected: "✗", skipped: "—" };
+    timeline.innerHTML = steps.map(s => `
+        <div class="ai-step ${s.status}">
+            <div class="ai-step-dot ${s.status}">${dotIcon[s.status] || "—"}</div>
+            <div class="ai-step-name">${s.name}</div>
+            ${s.detail ? `<div class="ai-step-detail">${s.detail}</div>` : ""}
+        </div>`).join("");
+});
+
+/* ── Raw Modal ───────────────────────────────────────── */
+document.getElementById("rawModal").addEventListener("show.bs.modal", function (e) {
+    const btn = e.relatedTarget;
+    document.getElementById("rawModalBody").textContent = btn.dataset.note || "No data.";
+    document.getElementById("rawModalSubtitle").textContent = btn.dataset.title || "";
+});
+
+/* ── View Results — reveal panel after HTMX swap ────────── */
+document.body.addEventListener('htmx:afterSwap', function (e) {
+    if (e.detail.target.id === 'monitor-results-panel') {
+        e.detail.target.scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+});
+
+/* ── Restore scroll position after approve/reject ────────── */
+(function () {
+    var y = sessionStorage.getItem('aiv_scrollY');
+    if (y) { window.scrollTo(0, parseInt(y, 10)); sessionStorage.removeItem('aiv_scrollY'); }
+    document.querySelectorAll('.action-form').forEach(function (f) {
+        f.addEventListener('submit', function () {
+            sessionStorage.setItem('aiv_scrollY', window.scrollY);
+        });
+    });
+})();
+
+/* ── Auto-expand session from ?expand=N after a monitor run ── */
+(function () {
+    const params     = new URLSearchParams(window.location.search);
+    const expandId   = params.get("expand");
+    if (!expandId) return;
+    history.replaceState({}, "", window.location.pathname);
+    const btn = document.querySelector("[data-session='" + expandId + "']");
+    if (btn) btn.click();
+})();
+</script>
+{% endblock %}

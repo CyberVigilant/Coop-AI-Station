@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Submit Opportunity | Coop AI Station{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 860px;">
+
+    <!-- Breadcrumb -->
+    <div class="mb-2 small">
+        <a class="text-brand text-decoration-none fw-semibold" href="{% url 'home' %}">Home</a>
+        <span class="text-muted mx-2">/</span>
+        <a class="text-brand text-decoration-none fw-semibold" href="{% url 'opportunities' %}">Opportunities</a>
+        <span class="text-muted mx-2">/</span>
+        <span class="text-muted">Submit Opportunity</span>
+    </div>
+
+    <!-- Heading -->
+    <div class="mb-4">
+        <h1 class="fw-black mb-1" style="font-weight: 900;">Submit an Opportunity</h1>
+        <p class="mb-0 text-secondary">Found a co-op opportunity? Share it with other students.</p>
+    </div>
+
+    <!-- Info banner -->
+    <div class="alert alert-warning rounded-xl d-flex align-items-start gap-2 mb-4">
+        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+        <span>Submitted opportunities will be reviewed before being published to ensure quality and accuracy.</span>
+    </div>
+
+    <!-- Form card -->
+    <div class="card rounded-xl shadow-sm mb-5">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row g-4">
+
+                    <!-- Title -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">{{ form.title.label }}</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.title.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Company -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">{{ form.company.label }}</label>
+                        {{ form.company }}
+                        {% if form.company.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.company.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">{{ form.category.label }}</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.category.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Deadline (optional) -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">{{ form.deadline.label }}</label>
+                        {{ form.deadline }}
+                        {% if form.deadline.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.deadline.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Region -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Region</label>
+                        <select id="regionSelect" name="region" class="form-select rounded-xl{% if location_error and not selected_region %} is-invalid{% endif %}">
+                            <option value="">Select a region…</option>
+                            {% for region in regions %}
+                            <option value="{{ region }}"{% if region == selected_region %} selected{% endif %}>{{ region }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if location_error and not selected_region %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ location_error }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- City -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">City</label>
+                        <select id="citySelect" name="city" class="form-select rounded-xl{% if location_error and selected_region and not selected_city %} is-invalid{% endif %}" disabled>
+                            <option value="">Select a city…</option>
+                        </select>
+                        {% if location_error and selected_region and not selected_city %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ location_error }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Source Link -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.source_link.label }}</label>
+                        {{ form.source_link }}
+                        {% if form.source_link.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.source_link.errors.0 }}
+                        </div>
+                        {% else %}
+                        <div class="form-text">{{ form.source_link.help_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ form.description.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-12 d-flex justify-content-end align-items-center gap-3 pt-2">
+                        <a href="{% url 'opportunities' %}" class="btn btn-outline-neutral">Cancel</a>
+                        <button type="submit" class="btn btn-cta">
+                            <i class="bi bi-send me-2"></i>Submit Opportunity
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const REGIONS = {{ regions_and_cities_json|safe }};
+    const regionSel = document.getElementById("regionSelect");
+    const citySel   = document.getElementById("citySelect");
+
+    // Pre-select city when returning after a validation error
+    const preselectedRegion = "{{ selected_region|default:'' }}";
+    const preselectedCity   = "{{ selected_city|default:'' }}";
+
+    function populateCities(region, preselectCity) {
+        citySel.innerHTML = '<option value="">Select a city\u2026</option>';
+        const cities = REGIONS[region] || [];
+        cities.forEach(function(c) {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            if (c === preselectCity) opt.selected = true;
+            citySel.appendChild(opt);
+        });
+        citySel.disabled = cities.length === 0;
+    }
+
+    // Restore state on page load (validation error repopulation)
+    if (preselectedRegion && REGIONS[preselectedRegion]) {
+        populateCities(preselectedRegion, preselectedCity);
+    }
+
+    regionSel.addEventListener("change", function () {
+        populateCities(this.value, "");
+    });
+</script>
+{% endblock %}

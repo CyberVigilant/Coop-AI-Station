@@ -1,0 +1,195 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Session #{{ session.id }} Details{% endblock %}
+{% block page_title %}Session #{{ session.id }} Details{% endblock %}
+{% block nav_fetch_opportunities %}active{% endblock %}
+
+{% block content %}
+
+<!-- Back -->
+<div class="mb-4">
+    <a href="{% url 'admin_fetch_opportunities' %}" class="btn btn-sm btn-outline-secondary rounded-3">
+        <i class="bi bi-arrow-left me-1"></i>Back to Fetch Opportunities
+    </a>
+</div>
+
+<!-- Summary card -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-4">
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <p class="mb-1 text-muted small">Initiated by</p>
+                <p class="fw-semibold mb-0">{{ session.initiated_by.display_name|default:"—" }}</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">Started</p>
+                <p class="fw-semibold mb-0">{{ session.started_at|date:"M d, Y H:i" }}</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">Finished</p>
+                <p class="fw-semibold mb-0">
+                    {% if session.finished_at %}{{ session.finished_at|date:"M d, Y H:i" }}{% else %}<span class="text-warning">Running…</span>{% endif %}
+                </p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">Searches</p>
+                <p class="fw-bold mb-0">{{ session.total_searches }}</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">URLs Found</p>
+                <p class="fw-bold mb-0">{{ session.total_found }}</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">Added</p>
+                <p class="fw-bold text-success mb-0">{{ session.total_added }}</p>
+            </div>
+            <div class="col-6 col-md-3">
+                <p class="mb-1 text-muted small">Skipped</p>
+                <p class="fw-bold mb-0">{{ session.total_skipped }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Per-query sections -->
+{% for query, discoveries in grouped.items %}
+<div class="mb-4">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-search text-muted"></i>
+        <span>Query: <em class="text-muted fw-normal">"{{ query }}"</em></span>
+        <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ discoveries|length }}</span>
+    </h6>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-0">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width:32px;">#</th>
+                        <th style="max-width:220px;">URL</th>
+                        <th>Company</th>
+                        <th>Title</th>
+                        <th>Result</th>
+                        <th>Time</th>
+                        <th class="pe-4 text-end">Log</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in discoveries %}
+                    <tr>
+                        <td class="ps-4 text-muted small">{{ forloop.counter }}</td>
+                        <td style="max-width:220px;">
+                            <a href="{{ d.fetch_url }}" target="_blank" rel="noopener"
+                               class="text-truncate d-block small text-decoration-none text-primary"
+                               style="max-width:200px;" title="{{ d.fetch_url }}">
+                                {{ d.fetch_url|truncatechars:60 }}
+                            </a>
+                        </td>
+                        <td class="text-muted small">
+                            {% if d.created_submission %}
+                                {{ d.created_submission.opportunity.company|default:"—" }}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="small fw-semibold" style="max-width:200px;">
+                            {% if d.created_submission %}
+                                <div class="text-truncate" title="{{ d.created_submission.opportunity.title }}">
+                                    {{ d.created_submission.opportunity.title }}
+                                </div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if d.result_label == "added" or d.result_label == "flagged" %}
+                            <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2">
+                                <i class="bi bi-check-circle-fill me-1"></i>Sent to Review
+                            </span>
+                            {% elif d.result_label == "skipped" %}
+                            <span class="badge rounded-pill bg-warning-subtle text-warning px-3 py-2">
+                                <i class="bi bi-skip-forward-fill me-1"></i>Rejected (Duplicate)
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2">
+                                <i class="bi bi-x-circle-fill me-1"></i>Rejected (Error)
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small" style="white-space:nowrap;">
+                            {{ d.fetched_at|date:"H:i:s" }}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary rounded-3"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modal-discovery-{{ d.id }}">
+                                <i class="bi bi-list-columns me-1"></i>View
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for this query group -->
+{% for d in discoveries %}
+<div class="modal fade" id="modal-discovery-{{ d.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-list-columns me-2 text-muted"></i>Step Log
+                    </h6>
+                    <small class="text-muted text-truncate d-block" style="max-width:420px;">{{ d.fetch_url }}</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                {% if d.step_log %}
+                <table class="table table-sm mb-0" style="font-size:.82rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width:80px;white-space:nowrap;">Time</th>
+                            <th>Step</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for step in d.step_log %}
+                        <tr>
+                            <td class="ps-4 text-muted align-top" style="white-space:nowrap;font-family:monospace;">
+                                {{ step.time }}
+                            </td>
+                            <td class="align-top">
+                                <div class="fw-semibold">{{ step.step }}</div>
+                                {% if step.detail %}
+                                <div class="text-muted small mt-1" style="word-break:break-word;">{{ step.detail }}</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-journal-x fs-3"></i>
+                    <div class="mt-2 small">No step log available.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endfor %}
+
+{% if not grouped %}
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-inbox text-muted" style="font-size:2rem;"></i>
+        <div class="text-muted mt-2">No discoveries recorded in this session.</div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}{{ form_title }}{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+{% block nav_opportunities %}active{% endblock %}
+
+{% block content %}
+<div style="max-width: 780px;">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row g-4">
+
+                    <!-- Title -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Title *</label>
+                        <input type="text" name="title"
+                               class="form-control rounded-3{% if errors.title %} is-invalid{% endif %}"
+                               value="{{ initial.title }}">
+                        {% if errors.title %}<div class="invalid-feedback">{{ errors.title }}</div>{% endif %}
+                    </div>
+
+                    <!-- Company -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Company</label>
+                        <input type="text" name="company" class="form-control rounded-3"
+                               value="{{ initial.company }}">
+                    </div>
+
+                    <!-- Company Domain -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Company Domain <span class="fw-normal text-muted">(optional — for logo)</span></label>
+                        <input type="text" name="company_domain" class="form-control rounded-3"
+                               placeholder="e.g. aramco.com.sa"
+                               value="{{ initial.company_domain }}">
+                        <div class="form-text">Used to fetch the company logo automatically via Clearbit.</div>
+                    </div>
+
+                    <!-- Category -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Category *</label>
+                        <select name="category" class="form-select rounded-3{% if errors.category %} is-invalid{% endif %}">
+                            <option value="">Select a category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}"
+                                {% if initial.category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.category %}<div class="invalid-feedback">{{ errors.category }}</div>{% endif %}
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Status</label>
+                        <select name="status" class="form-select rounded-3">
+                            <option value="open"   {% if initial.status == "open"   %}selected{% endif %}>Open</option>
+                            <option value="closed" {% if initial.status == "closed" %}selected{% endif %}>Closed</option>
+                        </select>
+                    </div>
+
+                    <!-- Region -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Region</label>
+                        <select id="regionSelect" name="region" class="form-select rounded-3">
+                            <option value="">Select a region…</option>
+                            {% for region in regions %}
+                            <option value="{{ region }}"{% if region == selected_region %} selected{% endif %}>{{ region }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- City -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">City</label>
+                        <select id="citySelect" name="city" class="form-select rounded-3" disabled>
+                            <option value="">Select a city…</option>
+                        </select>
+                    </div>
+
+                    <!-- Deadline -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold small">Deadline</label>
+                        <input type="date" name="deadline"
+                               class="form-control rounded-3{% if errors.deadline %} is-invalid{% endif %}"
+                               value="{{ initial.deadline }}">
+                        {% if errors.deadline %}<div class="invalid-feedback">{{ errors.deadline }}</div>{% endif %}
+                    </div>
+
+                    <!-- Source Link -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold small">Source Link</label>
+                        <input type="url" name="source_link" class="form-control rounded-3"
+                               placeholder="https://…"
+                               value="{{ initial.source_link }}">
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold small">Description</label>
+                        <textarea name="description" class="form-control rounded-3" rows="5"
+                                  placeholder="Opportunity description…">{{ initial.description }}</textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="col-12 d-flex gap-2 justify-content-end pt-2">
+                        <a href="{% url 'admin_opportunities' %}" class="btn btn-outline-secondary rounded-3">Cancel</a>
+                        <button type="submit" class="btn rounded-3 fw-bold"
+                                style="background:#FF8147;color:#fff;">
+                            {{ submit_label }}
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const REGIONS = {{ regions_and_cities_json|safe }};
+    const regionSel = document.getElementById("regionSelect");
+    const citySel   = document.getElementById("citySelect");
+    const preselectedRegion = "{{ selected_region|default:'' }}";
+    const preselectedCity   = "{{ selected_city|default:'' }}";
+
+    function populateCities(region, preselectCity) {
+        citySel.innerHTML = '<option value="">Select a city\u2026</option>';
+        const cities = REGIONS[region] || [];
+        cities.forEach(function(c) {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            if (c === preselectCity) opt.selected = true;
+            citySel.appendChild(opt);
+        });
+        citySel.disabled = cities.length === 0;
+    }
+
+    if (preselectedRegion && REGIONS[preselectedRegion]) {
+        populateCities(preselectedRegion, preselectedCity);
+    }
+
+    regionSel.addEventListener("change", function () {
+        populateCities(this.value, "");
+    });
+</script>
+{% endblock %}

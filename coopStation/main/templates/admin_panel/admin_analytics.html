@@ -1,0 +1,137 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+{% block nav_analytics %}active{% endblock %}
+
+{% block content %}
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total_opportunities }}</div>
+            <div class="stat-label">Total Opportunities</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total_students }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-dark">{{ total_submissions }}</div>
+            <div class="stat-label">Student Submissions</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value" style="color:#FF8147;">{{ subs_pending }}</div>
+            <div class="stat-label">Pending Submissions</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-success">{{ open_opportunities }}</div>
+            <div class="stat-label">Open Opportunities</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card p-4">
+            <div class="stat-value text-danger">{{ closed_opportunities }}</div>
+            <div class="stat-label">Closed Opportunities</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Opportunities by category -->
+    <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 h-100">
+            <div class="card-body p-0">
+                <div class="px-4 py-3 border-bottom fw-bold small">Opportunities by Category</div>
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Category</th>
+                            <th class="pe-4 text-end">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in opps_by_category %}
+                        <tr>
+                            <td class="ps-4">{{ row.category__name|default:"Uncategorised" }}</td>
+                            <td class="pe-4 text-end fw-semibold">{{ row.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-4">No data.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col-12 col-lg-6 d-flex flex-column gap-4">
+
+        <!-- Submissions by status -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-0">
+                <div class="px-4 py-3 border-bottom fw-bold small">Submissions by Status</div>
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Status</th>
+                            <th class="pe-4 text-end">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ps-4"><span class="badge rounded-pill" style="background:rgba(255,193,7,.15);color:#856404;">Pending</span></td>
+                            <td class="pe-4 text-end fw-semibold">{{ subs_pending }}</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4"><span class="badge rounded-pill bg-success-subtle text-success">Approved</span></td>
+                            <td class="pe-4 text-end fw-semibold">{{ subs_approved }}</td>
+                        </tr>
+                        <tr>
+                            <td class="ps-4"><span class="badge rounded-pill bg-danger-subtle text-danger">Rejected</span></td>
+                            <td class="pe-4 text-end fw-semibold">{{ subs_rejected }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reports by type -->
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-body p-0">
+                <div class="px-4 py-3 border-bottom fw-bold small">Reports by Type</div>
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Report Type</th>
+                            <th class="pe-4 text-end">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in reports_by_type %}
+                        <tr>
+                            <td class="ps-4">{{ row.report_type|title|cut:"_" }}</td>
+                            <td class="pe-4 text-end fw-semibold">{{ row.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted py-4">No reports yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

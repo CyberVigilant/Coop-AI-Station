@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% load static %}
+{% block header %}
+<header class="nav-dark sticky-top">
+  <div class="container py-3 d-flex align-items-center">
+    <a class="text-decoration-none" href="{% url 'home' %}">
+      <img src="{% static 'images/logo.png' %}" height="36" style="width:auto;" alt="Co-op Station">
+    </a>
+  </div>
+</header>
+{% endblock %}
+{% block title %}Register | Coop AI Station{% endblock %}
+
+{% block content %}
+
+<main class="min-vh-100 bg-soft py-5">
+
+  <!-- Back Arrow -->
+  <div class="container mb-3">
+    <a href="{% url 'home' %}" class="back-arrow">←</a>
+  </div>
+
+  <!-- Centered Card -->
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-9 col-lg-6 col-xl-5">
+
+        <div class="card shadow-sm border-0 rounded-4">
+          <div class="card-body p-4 p-md-5">
+
+            <!-- Tabs -->
+            <ul class="nav nav-pills mb-4 auth-tabs">
+              <li class="nav-item flex-fill" role="presentation">
+                <button class="nav-link w-100 fw-bold {% if active_tab == 'signup' %}active{% endif %}"
+                  data-bs-toggle="pill" data-bs-target="#tab-signup" type="button">
+                  Signup
+                </button>
+              </li>
+              <li class="nav-item flex-fill" role="presentation">
+                <button class="nav-link w-100 fw-bold {% if active_tab == 'login' %}active{% endif %}"
+                  data-bs-toggle="pill" data-bs-target="#tab-login" type="button">
+                  Login
+                </button>
+              </li>
+            </ul>
+
+            <div class="tab-content">
+
+              <!-- ===== SIGNUP TAB ===== -->
+              <div class="tab-pane fade {% if active_tab == 'signup' %}show active{% endif %}"
+                id="tab-signup" role="tabpanel">
+
+                <h1 class="h3 fw-bold mb-2">Create your account</h1>
+                <p class="text-secondary mb-4">Join Coop AI Station to discover co-op opportunities faster.</p>
+
+                <form method="post" action="{% url 'register' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="form_type" value="signup">
+
+                  <!-- Full Name -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Full Name</label>
+                    <input
+                      class="form-control form-control-lg{% if signup_form.full_name.errors %} is-invalid{% endif %}"
+                      name="full_name" placeholder="Khalid Fahad"
+                      value="{{ signup_form.full_name.value|default:'' }}" required>
+                    {% if signup_form.full_name.errors %}
+                    <div class="invalid-feedback">
+                      {% for e in signup_form.full_name.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Username -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Username</label>
+                    <input
+                      class="form-control form-control-lg{% if signup_form.username.errors %} is-invalid{% endif %}"
+                      name="username" placeholder="khalid_123"
+                      value="{{ signup_form.username.value|default:'' }}" required>
+                    {% if signup_form.username.errors %}
+                    <div class="invalid-feedback">
+                      {% for e in signup_form.username.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Email -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Email</label>
+                    <input
+                      class="form-control form-control-lg{% if signup_form.email.errors %} is-invalid{% endif %}"
+                      type="email" name="email" placeholder="khalid@university.edu.sa"
+                      value="{{ signup_form.email.value|default:'' }}" required>
+                    {% if signup_form.email.errors %}
+                    <div class="invalid-feedback">
+                      {% for e in signup_form.email.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Password -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <div class="position-relative">
+                      <input id="signupPassword"
+                        class="form-control form-control-lg pe-5{% if signup_form.password1.errors %} is-invalid{% endif %}"
+                        style="background-image:none;"
+                        type="password" name="password1" placeholder="Create a password"
+                        value="{{ signup_form.password1.value|default:'' }}" required>
+                      <button id="btnEyeSignup" type="button" style="
+                          position:absolute; right:12px; top:50%;
+                          transform:translateY(-50%);
+                          background:none; border:none; padding:4px;
+                          cursor:pointer; color:#6c757d; z-index:10;">
+                        <i id="eyeSignup" class="bi bi-eye"></i>
+                      </button>
+                    </div>
+                    {% if signup_form.password1.errors %}
+                    <div class="text-danger mt-1" style="font-size:.875rem;">
+                      {% for e in signup_form.password1.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Password strength indicator -->
+                    <div id="pwStrength" class="mt-2 d-flex flex-column gap-1" style="font-size:.8rem;">
+                      <div id="check-len" class="d-flex align-items-center gap-2 text-muted">
+                        <i class="bi bi-circle" style="font-size:.65rem;"></i>At least 8 characters
+                      </div>
+                      <div id="check-num" class="d-flex align-items-center gap-2 text-muted">
+                        <i class="bi bi-circle" style="font-size:.65rem;"></i>Contains a number
+                      </div>
+                      <div id="check-spec" class="d-flex align-items-center gap-2 text-muted">
+                        <i class="bi bi-circle" style="font-size:.65rem;"></i>Contains a special character
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Confirm Password -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Confirm Password</label>
+                    <div class="position-relative">
+                      <input id="signupPassword2"
+                        class="form-control form-control-lg pe-5{% if signup_form.password2.errors %} is-invalid{% endif %}"
+                        style="background-image:none;"
+                        type="password" name="password2" placeholder="Confirm your password"
+                        value="{{ signup_form.password2.value|default:'' }}" required>
+                      <button id="btnEyeSignup2" type="button" style="
+                          position:absolute; right:12px; top:50%;
+                          transform:translateY(-50%);
+                          background:none; border:none; padding:4px;
+                          cursor:pointer; color:#6c757d; z-index:10;">
+                        <i id="eyeSignup2" class="bi bi-eye"></i>
+                      </button>
+                    </div>
+                    {% if signup_form.password2.errors %}
+                    <div class="text-danger mt-1" style="font-size:.875rem;">
+                      {% for e in signup_form.password2.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if signup_form.non_field_errors %}
+                    <div class="text-danger mt-1" style="font-size:.875rem;">
+                      {% for e in signup_form.non_field_errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Terms — clickable link (fix #1) -->
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="terms" required>
+                    <label class="form-check-label text-secondary" for="terms">
+                      I agree to the
+                      <a href="{% url 'terms_of_service' %}" target="_blank"
+                        class="text-brand text-decoration-none fw-semibold">Terms & Privacy Policy</a>.
+                    </label>
+                  </div>
+
+                  <button class="btn btn-cta w-100 py-3">Create Account</button>
+                </form>
+              </div>
+              <!-- end signup tab -->
+
+              <!-- ===== LOGIN TAB ===== -->
+              <div class="tab-pane fade {% if active_tab == 'login' %}show active{% endif %}"
+                id="tab-login" role="tabpanel">
+
+                <h1 class="h3 fw-bold mb-2">Welcome back</h1>
+                <p class="text-secondary mb-4">Please enter your details to login.</p>
+
+                <form method="post" action="{% url 'register' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="form_type" value="login">
+
+                  <!-- Username or Email -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">Username or Email</label>
+                    <input
+                      class="form-control form-control-lg{% if login_form.identifier.errors %} is-invalid{% endif %}"
+                      name="identifier" placeholder="Enter your username or email"
+                      value="{{ login_form.identifier.value|default:'' }}" required>
+                    {% if login_form.identifier.errors %}
+                    <div class="invalid-feedback">
+                      {% for e in login_form.identifier.errors %}{{ e }}{% endfor %}
+                    </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Password -->
+                  <div class="mb-2 d-flex justify-content-between align-items-center">
+                    <label class="form-label fw-semibold mb-0">Password</label>
+                    <a class="text-brand small text-decoration-none" href="#">Forgot password?</a>
+                  </div>
+
+                  <div class="mb-3 position-relative">
+                    <input id="loginPassword"
+                      class="form-control form-control-lg pe-5{% if login_form.non_field_errors %} is-invalid{% endif %}"
+                      style="background-image:none;"
+                      type="password" name="password" placeholder="Your password" required>
+                    <button id="btnEyeLogin" type="button" style="
+                        position:absolute; right:12px; top:50%;
+                        transform:translateY(-50%);
+                        background:none; border:none; padding:4px;
+                        cursor:pointer; color:#6c757d; z-index:10;">
+                      <i id="eyeIcon" class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  {% if login_form.non_field_errors %}
+                  <div class="text-danger mb-2" style="font-size:.875rem;">
+                    {% for e in login_form.non_field_errors %}{{ e }}{% endfor %}
+                  </div>
+                  {% endif %}
+
+                  <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="remember">
+                    <label class="form-check-label text-secondary" for="remember">Remember me</label>
+                  </div>
+
+                  <button class="btn btn-login-orange w-100 py-3">Login</button>
+                </form>
+              </div>
+              <!-- end login tab -->
+
+            </div><!-- end tab-content -->
+
+            <p class="text-center text-secondary small mt-4 mb-0">
+              © 2026 Coop AI Station. All rights reserved.
+            </p>
+
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center gap-4 mt-4 small text-secondary flex-wrap">
+          <div>✓ Verified companies</div>
+          <div>✓ AI driven search</div>
+          <div>✓ Free for students</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+    // ── Eye toggle helper ──────────────────────────────────────────────
+    function wireEye(btnId, inputId, iconId) {
+      const btn   = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      if (!btn || !input || !icon) return;
+
+      btn.addEventListener("click", function () {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        icon.classList.remove(show ? "bi-eye" : "bi-eye-slash");
+        icon.classList.add(show ? "bi-eye-slash" : "bi-eye");
+      });
+    }
+
+    wireEye("btnEyeSignup",  "signupPassword",  "eyeSignup");
+    wireEye("btnEyeSignup2", "signupPassword2", "eyeSignup2");
+    wireEye("btnEyeLogin",   "loginPassword",   "eyeIcon");
+
+    // ── Password strength checker ──────────────────────────────────────
+    const pw = document.getElementById("signupPassword");
+    if (pw) {
+      const checks = {
+        len:  { el: document.getElementById("check-len"),  test: v => v.length >= 8 },
+        num:  { el: document.getElementById("check-num"),  test: v => /\d/.test(v) },
+        spec: { el: document.getElementById("check-spec"), test: v => /[!@#$%^&*()\-_=+\[\]{};':",./<>?\\|`~]/.test(v) },
+      };
+
+      pw.addEventListener("input", function () {
+        const val = this.value;
+        Object.values(checks).forEach(function ({ el, test }) {
+          const passes = test(val);
+          const icon   = el.querySelector("i");
+          if (passes) {
+            el.style.color = "#06D6A0";
+            el.classList.remove("text-muted");
+            icon.className = "bi bi-check-circle-fill";
+            icon.style.fontSize = ".65rem";
+          } else {
+            el.style.color = "";
+            el.classList.add("text-muted");
+            icon.className = "bi bi-circle";
+            icon.style.fontSize = ".65rem";
+          }
+        });
+      });
+    }
+
+  });
+</script>
+{% endblock %}

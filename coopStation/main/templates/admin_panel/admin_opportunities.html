@@ -1,0 +1,245 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Opportunities{% endblock %}
+{% block page_title %}Opportunities{% endblock %}
+{% block nav_opportunities %}active{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-12 col-md-5">
+                <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm rounded-3"
+                       placeholder="Search title or company…">
+            </div>
+            <div class="col-6 col-md-3">
+                <select name="category" class="form-select form-select-sm rounded-3">
+                    <option value="">All categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="status" class="form-select form-select-sm rounded-3">
+                    <option value="">All statuses</option>
+                    <option value="open"   {% if status_filter == "open" %}selected{% endif %}>Open</option>
+                    <option value="closed" {% if status_filter == "closed" %}selected{% endif %}>Closed</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-dark rounded-3">Filter</button>
+                <a href="{% url 'admin_opportunities' %}" class="btn btn-sm btn-outline-secondary rounded-3 ms-1">Clear</a>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{% url 'admin_add_opportunity' %}" class="btn btn-sm rounded-3 fw-bold"
+                   style="background:#FF8147;color:#fff;">
+                    <i class="bi bi-plus-lg me-1"></i>Add Opportunity
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Title</th>
+                    <th>Company</th>
+                    <th>Category</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <th class="pe-4 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opp in page_obj %}
+                <tr style="cursor:pointer;"
+                    data-bs-toggle="modal"
+                    data-bs-target="#oppDetailModal"
+                    data-title="{{ opp.title }}"
+                    data-company="{{ opp.company|default:'' }}"
+                    data-category="{{ opp.category.name|default:'' }}"
+                    data-location="{{ opp.location|default:'' }}"
+                    data-deadline="{% if opp.deadline %}{{ opp.deadline|date:'M d, Y' }}{% endif %}"
+                    data-status="{{ opp.status }}"
+                    data-description="{{ opp.description|default:'' }}"
+                    data-source-link="{{ opp.source_link|default:'' }}"
+                    data-major="{{ opp.major|default:'' }}">
+                    <td class="ps-4 fw-semibold" style="max-width:200px;">
+                        <div class="text-truncate">{{ opp.title }}</div>
+                    </td>
+                    <td class="text-muted small">{{ opp.company|default:"N/A" }}</td>
+                    <td class="small">{{ opp.category.name|default:"N/A" }}</td>
+                    <td class="small text-muted">
+                        {% if opp.deadline %}{{ opp.deadline|date:"M d, Y" }}{% else %}N/A{% endif %}
+                    </td>
+                    <td>
+                        {% if opp.status == "open" %}
+                        <span class="badge bg-success-subtle text-success rounded-pill">Open</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">Closed</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end" onclick="event.stopPropagation();">
+                        <a href="{% url 'admin_edit_opportunity' opp.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="post" action="{% url 'admin_delete_opportunity' opp.id %}" class="d-inline ms-1"
+                              onsubmit="return confirm('Delete {{ opp.title|escapejs }}?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">No opportunities found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 border-top">
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&category={{ category_filter }}&status={{ status_filter }}">‹</a>
+                    </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}&q={{ q }}&category={{ category_filter }}&status={{ status_filter }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&category={{ category_filter }}&status={{ status_filter }}">›</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ── Opportunity Detail Modal ──────────────────────────────────────────────── -->
+<div class="modal fade" id="oppDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom pb-3">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-briefcase me-2 text-muted"></i>Opportunity Details
+                    </h6>
+                    <small class="text-muted" id="oppModalSubtitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div class="row g-4">
+
+                    <!-- Left column: meta fields -->
+                    <div class="col-md-5">
+                        <dl class="row g-0" id="oppModalMeta" style="row-gap:.65rem;"></dl>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="col-md-1 d-none d-md-flex justify-content-center">
+                        <div style="width:1px;background:#dee2e6;min-height:100%;"></div>
+                    </div>
+
+                    <!-- Right column: description + link -->
+                    <div class="col-md-6">
+                        <p class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.06em;">Description</p>
+                        <p id="oppModalDescription" class="small mb-4" style="line-height:1.7;white-space:pre-wrap;"></p>
+
+                        <p class="text-muted small fw-semibold text-uppercase mb-2" style="letter-spacing:.06em;">Source Link</p>
+                        <div id="oppModalLinkWrap"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ── Opportunity Detail Modal ────────────────────────────────── */
+document.getElementById('oppDetailModal').addEventListener('show.bs.modal', function (e) {
+    var row        = e.relatedTarget;
+    var title      = row.dataset.title      || '';
+    var company    = row.dataset.company    || '';
+    var category   = row.dataset.category   || '';
+    var location   = row.dataset.location   || '';
+    var deadline   = row.dataset.deadline   || '';
+    var status     = row.dataset.status     || '';
+    var desc       = row.dataset.description|| '';
+    var link       = row.dataset.sourceLink || '';
+    var major      = row.dataset.major      || '';
+
+    document.getElementById('oppModalSubtitle').textContent = title;
+
+    /* Parse location "Region,City" */
+    var locParts = location ? location.split(',') : [];
+    var region   = locParts[0] ? locParts[0].trim() : '';
+    var city     = locParts[1] ? locParts[1].trim() : '';
+
+    function row_(label, value) {
+        var v = value && value.trim() ? value : 'N/A';
+        return '<dt class="col-5 text-muted small fw-semibold">' + label + '</dt>' +
+               '<dd class="col-7 small mb-0">' + v + '</dd>';
+    }
+
+    var statusBadge = status === 'open'
+        ? '<span class="badge bg-success-subtle text-success rounded-pill">Open</span>'
+        : '<span class="badge bg-secondary-subtle text-secondary rounded-pill">Closed</span>';
+
+    document.getElementById('oppModalMeta').innerHTML =
+        row_('Title',    title)    +
+        row_('Company',  company)  +
+        row_('Category', category) +
+        row_('Region',   region)   +
+        row_('City',     city)     +
+        row_('Deadline', deadline) +
+        row_('Major',    major)    +
+        '<dt class="col-5 text-muted small fw-semibold">Status</dt>' +
+        '<dd class="col-7 small mb-0">' + statusBadge + '</dd>';
+
+    document.getElementById('oppModalDescription').textContent = desc && desc.trim() ? desc : 'N/A';
+
+    var linkWrap = document.getElementById('oppModalLinkWrap');
+    if (link && link.trim()) {
+        linkWrap.innerHTML = '<a href="' + link + '" target="_blank" rel="noopener" ' +
+            'class="small text-break" style="word-break:break-all;">' + link + '</a>';
+    } else {
+        linkWrap.innerHTML = '<span class="small text-muted">N/A</span>';
+    }
+});
+
+/* ── Restore scroll position after delete redirect ───────── */
+(function () {
+    var y = sessionStorage.getItem('opps_scrollY');
+    if (y) { window.scrollTo(0, parseInt(y, 10)); sessionStorage.removeItem('opps_scrollY'); }
+    document.querySelectorAll('form[action*="delete"]').forEach(function (f) {
+        f.addEventListener('submit', function () {
+            sessionStorage.setItem('opps_scrollY', window.scrollY);
+        });
+    });
+})();
+</script>
+{% endblock %}

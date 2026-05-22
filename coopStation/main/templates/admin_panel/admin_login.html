@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Co-op Station</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background: #f4f6fb; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-card { width: 100%; max-width: 400px; border: none; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+        .brand-accent { color: #FF8147; font-weight: 800; }
+    </style>
+</head>
+<body>
+    <div class="card login-card p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="fs-5 fw-bold mb-1">Co-op Station <span class="brand-accent">Admin</span></div>
+            <div class="text-muted small">Sign in to the admin panel</div>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger rounded-3 py-2 small">
+            <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">Email</label>
+                <input type="email" name="email" class="form-control rounded-3"
+                       placeholder="admin@example.com" autofocus>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-semibold small">Password</label>
+                <input type="password" name="password" class="form-control rounded-3"
+                       placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn w-100 fw-bold"
+                    style="background:#FF8147;color:#fff;border-radius:10px;">
+                Sign In
+            </button>
+        </form>
+    </div>
+</body>
+</html>

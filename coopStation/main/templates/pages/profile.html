@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}My Profile | Coop AI Station{% endblock %}
+
+{% block extra_head %}
+<style>
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 980px;">
+
+    <!-- Breadcrumb -->
+    <div class="mb-2 small">
+        <a class="text-brand text-decoration-none fw-semibold" href="{% url 'home' %}">Home</a>
+        <span class="text-muted mx-2">/</span>
+        <span class="text-muted">Profile Settings</span>
+    </div>
+
+    <!-- Heading -->
+    <div class="mb-4">
+        <h1 class="fw-black mb-1" style="font-weight: 900;">My Profile</h1>
+        <p class="mb-0">Manage your information.</p>
+    </div>
+
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} rounded-xl">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+
+    <!-- Profile summary -->
+    <div class="card rounded-xl shadow-sm mb-4">
+        <div class="card-body p-4 p-md-5">
+            <div
+                class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-4">
+
+                <div class="d-flex align-items-center gap-4">
+
+                    <div class="rounded-circle border flex-shrink-0 overflow-hidden d-flex align-items-center justify-content-center"
+                        style="width:84px;height:84px;aspect-ratio:1/1; background:white;">
+
+                        {% if student.avatar %}
+                        <img src="{{ student.avatar.url }}" alt="Profile Avatar"
+                            style="width:100%; height:100%; object-fit:cover;">
+                        {% else %}
+                        <i class="bi bi-person-fill text-secondary" style="font-size: 40px;"></i>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <div class="fs-4 fw-bold mb-3">
+                            <span class="text-brand">{{ request.user.username }}</span>
+                        </div>
+
+                        <div class="row g-3 mt-1 small">
+
+                            <!-- First column -->
+                            <div class="col-12 col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-person-badge text-muted me-2"></i>
+                                    <span class="text-muted me-2">Full name:</span>
+                                    <span class="fw-semibold">{{ student.full_name|default:"Not added" }}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-person text-muted me-2"></i>
+                                    <span class="text-muted me-2">Gender:</span>
+                                    <span class="fw-semibold">{{ student.gender|default:"Not added" }}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-telephone text-muted me-2"></i>
+                                    <span class="text-muted me-2">Phone:</span>
+                                    <span class="fw-semibold">{{ student.phone_num|default:"Not added" }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Second column -->
+                            <div class="col-12 col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-mortarboard text-muted me-2"></i>
+                                    <span class="text-muted me-2">Major:</span>
+                                    <span class="fw-semibold text-nowrap">{{ student.major|default:"Not added" }}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-envelope text-muted me-2"></i>
+                                    <span class="text-muted me-2">Email:</span>
+                                    <span class="fw-semibold">{{ request.user.email|default:"Not added" }}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-linkedin text-muted me-2"></i>
+                                    <span class="text-muted me-2">LinkedIn:</span>
+                                    {% if student.linkedin_url %}
+                                    <a class="fw-semibold text-brand text-decoration-none"
+                                        href="{{ student.linkedin_url }}" target="_blank">View profile</a>
+                                    {% else %}
+                                    <span class="fw-semibold">Not added</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                    <form method="post" enctype="multipart/form-data" id="avatarUploadForm" class="m-0">
+                        {% csrf_token %}
+                        <input type="file" name="avatar" id="avatarInput" accept="image/*" hidden>
+                        <button type="button" class="btn btn-outline-neutral text-nowrap w-100"
+                            onclick="document.getElementById('avatarInput').click();">
+                            <i class="bi bi-camera me-1"></i> Change Avatar
+                        </button>
+                    </form>
+                    {% if student.avatar %}
+                    <form method="post" class="m-0">
+                        {% csrf_token %}
+                        <input type="hidden" name="remove_avatar" value="1">
+                        <button type="submit" class="btn btn-outline-danger text-nowrap w-100">
+                            <i class="bi bi-trash me-1"></i> Remove Avatar
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Profile Details -->
+    <div class="card rounded-xl shadow-sm mb-4 overflow-hidden">
+        <button class="w-100 text-start bg-white border-0 p-4 p-md-5 d-flex align-items-center justify-content-between"
+            type="button" data-bs-toggle="collapse" data-bs-target="#updateProfilePanel" aria-expanded="false"
+            aria-controls="updateProfilePanel">
+
+            <div class="h4 fw-bold mb-0">Update Profile Details</div>
+
+            <span class="d-inline-flex align-items-center gap-2 text-muted fw-semibold">
+                <span class="small">Edit</span>
+                <i class="bi bi-chevron-down{% if field_errors or messages %} rotate-180{% endif %}" id="updateArrow"></i>
+            </span>
+        </button>
+
+        <div class="collapse{% if field_errors or messages %} show{% endif %}" id="updateProfilePanel">
+            <div class="px-4 px-md-5 pb-4 pb-md-5">
+                <form class="row g-4" method="post" autocomplete="off">
+                    {% csrf_token %}
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">New Username</label>
+                        <div class="position-relative">
+                            <i class="bi bi-person search-icon"></i>
+                            <input name="username"
+                                class="form-control input-icon{% if field_errors.username %} is-invalid{% endif %}"
+                                placeholder="Enter new username"
+                                value="{{ form_data.username|default:'' }}"
+                                autocomplete="off">
+                        </div>
+                        {% if field_errors.username %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ field_errors.username }}
+                        </div>
+                        {% else %}
+                        <div class="form-text">Choose a unique username for the platform.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">New Email Address</label>
+                        <div class="position-relative">
+                            <i class="bi bi-at search-icon"></i>
+                            <input name="email" type="email"
+                                class="form-control input-icon{% if field_errors.email %} is-invalid{% endif %}"
+                                placeholder="new.email@mail.com"
+                                value="{{ form_data.email|default:'' }}"
+                                autocomplete="off">
+                        </div>
+                        {% if field_errors.email %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ field_errors.email }}
+                        </div>
+                        {% else %}
+                        <div class="form-text">We recommend using your personal email.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Edit Full Name</label>
+                        <div class="position-relative">
+                            <i class="bi bi-person-vcard search-icon"></i>
+                            <input name="full_name" class="form-control input-icon" placeholder="Enter Full Name"
+                                autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Gender</label>
+                        <div class="position-relative">
+                            <i class="bi bi-person search-icon"></i>
+                            <select name="gender" class="form-select input-icon" autocomplete="off">
+                                <option value="" selected>Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">New Phone Number</label>
+                        <div class="position-relative">
+                            <i class="bi bi-telephone search-icon"></i>
+                            <input name="phone_num"
+                                class="form-control input-icon{% if field_errors.phone_num %} is-invalid{% endif %}"
+                                placeholder="+966 5X XXX XXXX"
+                                value="{{ form_data.phone_num|default:'' }}"
+                                maxlength="20"
+                                autocomplete="off">
+                        </div>
+                        {% if field_errors.phone_num %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ field_errors.phone_num }}
+                        </div>
+                        {% else %}
+                        <div class="form-text">Please enter a Saudi phone number.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Edit Major</label>
+                        <div class="position-relative">
+                            <i class="bi bi-mortarboard search-icon"></i>
+                            <select name="major" class="form-select input-icon" autocomplete="off">
+                                <option value="" selected>Select your major</option>
+                                {% for major_option in majors %}
+                                <option value="{{ major_option }}">{{ major_option }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Edit LinkedIn Profile Link</label>
+                        <div class="position-relative">
+                            <i class="bi bi-linkedin search-icon"></i>
+                            <input name="linkedin_url"
+                                class="form-control input-icon{% if field_errors.linkedin_url %} is-invalid{% endif %}"
+                                placeholder="https://linkedin.com/in/..."
+                                value="{{ form_data.linkedin_url|default:'' }}"
+                                autocomplete="off">
+                        </div>
+                        {% if field_errors.linkedin_url %}
+                        <div class="invalid-feedback d-block mt-1">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ field_errors.linkedin_url }}
+                        </div>
+                        {% else %}
+                        <div class="form-text">Must be a linkedin.com URL.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">New Password</label>
+                        <div class="position-relative">
+                            <i class="bi bi-lock search-icon"></i>
+                            <input name="password1" type="password" class="form-control input-icon"
+                                placeholder="••••••••" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold">Confirm New Password</label>
+                        <div class="position-relative">
+                            <i class="bi bi-shield-check search-icon"></i>
+                            <input name="password2" type="password" class="form-control input-icon"
+                                placeholder="••••••••" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-flex justify-content-end gap-2 pt-2">
+                        <button class="btn btn-outline-neutral" type="reset">Cancel</button>
+                        <button class="btn btn-cta" type="submit">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete account -->
+    <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-danger" type="button" data-bs-toggle="collapse" data-bs-target="#deleteConfirm">
+            Delete account
+        </button>
+    </div>
+
+    <div class="collapse mt-3" id="deleteConfirm">
+        <div class="p-4 rounded-xl border border-danger-subtle bg-white">
+            <div class="fw-bold mb-2 text-danger">Delete account</div>
+            <p>
+                Once your account is deleted, personal information is deleted; however, previously public
+                contributions will remain published.
+            </p>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-outline-neutral" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#deleteConfirm">
+                    Cancel
+                </button>
+                <button class="btn btn-danger" type="button" id="deleteNowBtn">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3 d-none" id="deleteSuccess">
+        <div class="alert alert-danger rounded-xl mb-0 d-flex align-items-center justify-content-between gap-3">
+            <span>Deleting your account in <strong><span id="countdown">5</span></strong> seconds…</span>
+            <button type="button" id="cancelDeleteBtn" class="btn btn-sm btn-outline-danger text-nowrap">
+                Cancel
+            </button>
+        </div>
+        <form id="deleteForm" method="post" action="{% url 'delete_account' %}" class="d-none">
+            {% csrf_token %}
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const updatePanel = document.getElementById("updateProfilePanel");
+        const updateArrow = document.getElementById("updateArrow");
+
+        const deleteBtn = document.querySelector('[data-bs-target="#deleteConfirm"]');
+        const deleteSection = document.getElementById("deleteConfirm");
+
+        const delBtn = document.getElementById("deleteNowBtn");
+        const success = document.getElementById("deleteSuccess");
+        const confirm = document.getElementById("deleteConfirm");
+        const countdownEl = document.getElementById("countdown");
+        const avatarInput = document.getElementById("avatarInput");
+        const avatarForm = document.getElementById("avatarUploadForm");
+
+        if (avatarInput && avatarForm) {
+            avatarInput.addEventListener("change", function () {
+                if (this.files.length > 0) {
+                    avatarForm.submit();
+                }
+            });
+        }
+
+        if (updatePanel && updateArrow) {
+            updatePanel.addEventListener("show.bs.collapse", function () {
+                updateArrow.classList.add("rotate-180");
+                setTimeout(() => {
+                    updatePanel.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 250);
+            });
+
+            updatePanel.addEventListener("hide.bs.collapse", function () {
+                updateArrow.classList.remove("rotate-180");
+            });
+        }
+
+        if (deleteBtn && deleteSection) {
+            deleteBtn.addEventListener("click", () => {
+                setTimeout(() => {
+                    deleteSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 250);
+            });
+        }
+
+        const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+        const deleteForm = document.getElementById("deleteForm");
+
+        if (delBtn) {
+            let timer = null;
+
+            delBtn.addEventListener("click", () => {
+                const bs = bootstrap.Collapse.getOrCreateInstance(confirm);
+                bs.hide();
+                success.classList.remove("d-none");
+                success.scrollIntoView({ behavior: "smooth", block: "center" });
+
+                let seconds = 5;
+                countdownEl.textContent = seconds;
+
+                timer = setInterval(() => {
+                    seconds--;
+                    countdownEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(timer);
+                        deleteForm.submit();
+                    }
+                }, 1000);
+            });
+
+            if (cancelDeleteBtn) {
+                cancelDeleteBtn.addEventListener("click", () => {
+                    clearInterval(timer);
+                    success.classList.add("d-none");
+                    const bs = bootstrap.Collapse.getOrCreateInstance(confirm);
+                    bs.show();
+                });
+            }
+        }
+
+    });
+</script>
+{% endblock %}

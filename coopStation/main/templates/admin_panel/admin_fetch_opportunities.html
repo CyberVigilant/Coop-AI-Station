@@ -1,0 +1,267 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Fetch Opportunities{% endblock %}
+{% block page_title %}Opportunity Observer{% endblock %}
+{% block nav_fetch_opportunities %}active{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 mb-4" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Schedule Settings -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center"
+                 style="width:48px;height:48px;background:rgba(25,135,84,.12);">
+                <i class="bi bi-clock text-success fs-4"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1">Automatic Fetching Schedule</h6>
+                <p class="text-muted small mb-3">
+                    Configure the Observer to run automatically at a set time. Changes take effect immediately without restarting the server.
+                </p>
+
+                <form method="post" action="{% url 'admin_save_schedule' %}">
+                    {% csrf_token %}
+
+                    <div class="row g-3 align-items-end">
+
+                        <!-- Enable toggle -->
+                        <div class="col-auto">
+                            <div class="form-check form-switch mb-0 pt-1">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       id="scheduleEnabled" name="enabled"
+                                       {% if schedule and schedule.enabled %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold small" for="scheduleEnabled">
+                                    Enable Automatic Fetching
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small fw-semibold mb-1">Frequency</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="frequency"
+                                           id="freqDaily" value="daily"
+                                           {% if not schedule or schedule.frequency == 'daily' %}checked{% endif %}
+                                           onchange="toggleDayPicker()">
+                                    <label class="form-check-label small" for="freqDaily">Daily</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="frequency"
+                                           id="freqWeekly" value="weekly"
+                                           {% if schedule and schedule.frequency == 'weekly' %}checked{% endif %}
+                                           onchange="toggleDayPicker()">
+                                    <label class="form-check-label small" for="freqWeekly">Weekly</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Day of week (shown only for weekly) -->
+                        <div class="col-12 col-md-auto" id="dayPickerWrap"
+                             style="{% if not schedule or schedule.frequency != 'weekly' %}display:none;{% endif %}">
+                            <label class="form-label small fw-semibold mb-1" for="dayOfWeek">Day</label>
+                            <select class="form-select form-select-sm" name="day_of_week" id="dayOfWeek" style="min-width:130px;">
+                                {% for day in day_names %}
+                                <option value="{{ forloop.counter0 }}"
+                                    {% if schedule and schedule.day_of_week == forloop.counter0 %}selected{% endif %}>
+                                    {{ day }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Time -->
+                        <div class="col-12 col-md-auto">
+                            <label class="form-label small fw-semibold mb-1" for="runAtTime">At time</label>
+                            <input type="time" class="form-control form-control-sm" name="run_at_time" id="runAtTime"
+                                   value="{{ schedule.run_at_time|time:'H:i'|default:'09:00' }}"
+                                   style="min-width:110px;">
+                        </div>
+
+                        <div class="col-12 col-md-auto">
+                            <button type="submit" class="btn btn-success btn-sm px-4">
+                                <i class="bi bi-floppy me-1"></i>Save Schedule
+                            </button>
+                        </div>
+
+                    </div>
+                </form>
+
+                <div class="mt-3 small text-muted d-flex align-items-center gap-3 flex-wrap">
+                    <span id="fetch-scheduler-badge">
+                        <span class="spinner-border spinner-border-sm me-1" style="width:.7rem;height:.7rem;"></span>Checking scheduler…
+                    </span>
+                    <span>
+                    {% if schedule and schedule.enabled %}
+                        {% if schedule.next_run %}
+                            <i class="bi bi-calendar-check me-1 text-success"></i>
+                            Next run: {{ schedule.next_run|date:"l, M d Y" }} at {{ schedule.run_at_time|time:"H:i" }}
+                        {% else %}
+                            <i class="bi bi-clock me-1"></i>Schedule enabled — next run not yet calculated.
+                        {% endif %}
+                        {% if schedule.last_run %}
+                        &nbsp;·&nbsp; Last run: {{ schedule.last_run|date:"M d, Y H:i" }}
+                        {% endif %}
+                    {% else %}
+                        <i class="bi bi-dash-circle me-1"></i>Automatic scheduling is disabled.
+                    {% endif %}
+                    </span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDayPicker() {
+    const weekly = document.getElementById('freqWeekly').checked;
+    document.getElementById('dayPickerWrap').style.display = weekly ? '' : 'none';
+}
+(function() {
+    fetch("{% url 'admin_scheduler_status' %}")
+        .then(r => r.json())
+        .then(function(d) {
+            var badge = document.getElementById('fetch-scheduler-badge');
+            if (!badge) return;
+            var fetchJob = d.jobs.find(function(j) { return j.id === 'fetch_opportunities_auto'; });
+            if (!d.running) {
+                badge.innerHTML = '<span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-1"><i class="bi bi-x-circle me-1"></i>Scheduler not running — restart the server</span>';
+            } else if (fetchJob) {
+                badge.innerHTML = '<span class="badge bg-success-subtle text-success rounded-pill px-2 py-1"><i class="bi bi-check-circle me-1"></i>Scheduler active · next: ' + (fetchJob.next_run || '?') + '</span>';
+            } else {
+                badge.innerHTML = '<span class="badge bg-warning-subtle text-warning rounded-pill px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Scheduler running but fetch job not registered — save schedule again</span>';
+            }
+        })
+        .catch(function() {
+            var badge = document.getElementById('fetch-scheduler-badge');
+            if (badge) badge.innerHTML = '';
+        });
+})();
+</script>
+
+<!-- Explainer + Initiate -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="flex-shrink-0 rounded-3 d-flex align-items-center justify-content-center"
+                 style="width:48px;height:48px;background:rgba(13,110,253,.1);">
+                <i class="bi bi-globe text-primary fs-4"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1">How it works</h6>
+                <p class="text-muted small mb-3">
+                    Clicking <strong>Initiate New Fetch</strong> will search Google for co-op and internship
+                    opportunities in Saudi Arabia using 5 queries (2 fixed + 3 AI-generated).
+                    Each result page is scraped and analysed by Groq. Valid listings are added to the platform
+                    automatically. The process takes 1–3 minutes — the page will reload when it finishes.
+                </p>
+                {% if serper_configured %}
+                <form method="post" action="{% url 'admin_run_fetch' %}"
+                      onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='<span class=\'spinner-border spinner-border-sm me-2\'></span>Fetching…';">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Initiate New Fetch
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-warning rounded-3 mb-0 d-flex align-items-center gap-2" style="max-width:520px;">
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                    <span class="small">
+                        <strong>Serper API key not configured.</strong>
+                        Add <code>SERPER_API_KEY=your_key</code> to your <code>.env</code> file, then restart the server.
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sessions table -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
+        <h6 class="fw-bold mb-0">Fetch Sessions</h6>
+    </div>
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Session</th>
+                    <th>Started</th>
+                    <th>Duration</th>
+                    <th>Searches</th>
+                    <th>Found</th>
+                    <th class="text-success">Added</th>
+                    <th>Skipped</th>
+                    <th>Status</th>
+                    <th class="pe-4 text-end">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sessions %}
+                <tr>
+                    <td class="ps-4 fw-semibold">Session #{{ s.id }}</td>
+                    <td class="text-muted small" style="white-space:nowrap;">
+                        {{ s.started_at|date:"M d, Y" }}<br>
+                        <span style="font-size:.75rem;">{{ s.started_at|date:"H:i" }}</span>
+                    </td>
+                    <td class="text-muted small">
+                        {% if s.finished_at %}
+                            {% with delta=s.finished_at|timeuntil:s.started_at %}
+                                {{ delta }}
+                            {% endwith %}
+                        {% else %}
+                            <span class="text-warning">Running…</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ s.total_searches }}</td>
+                    <td class="text-muted small">{{ s.total_found }}</td>
+                    <td class="fw-semibold text-success small">{{ s.total_added }}</td>
+                    <td class="text-muted small">{{ s.total_skipped }}</td>
+                    <td>
+                        {% if s.status == "running" %}
+                        <span class="badge rounded-pill bg-warning-subtle text-warning px-3 py-2">
+                            <i class="bi bi-hourglass-split me-1"></i>Running
+                        </span>
+                        {% elif s.status == "completed" %}
+                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2">
+                            <i class="bi bi-check-circle-fill me-1"></i>Completed
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2">
+                            <i class="bi bi-x-circle-fill me-1"></i>Failed
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <a href="{% url 'admin_fetch_session_detail' s.id %}"
+                           class="btn btn-sm btn-outline-secondary rounded-3">
+                            <i class="bi bi-list-ul me-1"></i>Details
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <i class="bi bi-globe text-muted" style="font-size:2rem;"></i>
+                        <div class="text-muted mt-2">No fetch sessions yet.</div>
+                        <div class="text-muted small">Click <strong>Initiate New Fetch</strong> above to start the first one.</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

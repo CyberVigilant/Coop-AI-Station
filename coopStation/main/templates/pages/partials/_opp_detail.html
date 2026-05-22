@@ -1,0 +1,334 @@
+{% load logo_tags %}
+<style>
+/* Star rating selector */
+.star-group { display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:.2rem; }
+.star-group input { display:none; }
+.star-group label { font-size:1.5rem; color:#D1D5DB; cursor:pointer; line-height:1; }
+.star-group input:checked ~ label,
+.star-group label:hover,
+.star-group label:hover ~ label { color:#FBBF24; }
+</style>
+
+<!-- Header: status + company + title -->
+<div class="px-4 pt-4 pb-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        {% if opp.status == "open" %}
+        <span class="badge-status badge-active">Open</span>
+        {% else %}
+        <span class="badge-status badge-applied">Closed</span>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2">
+            {% with logo=opp.company_domain|company_logo_url %}
+            {% if logo %}
+            <img src="{{ logo }}"
+                 width="28" height="28"
+                 style="object-fit:contain;border-radius:6px;background:#f5f5f5;padding:3px;flex-shrink:0;"
+                 alt="{{ opp.company }}"
+                 onerror="this.style.display='none';">
+            {% endif %}
+            {% endwith %}
+            <span class="small text-muted">{{ opp.company|default:"" }}</span>
+        </div>
+    </div>
+    <h5 class="fw-black mb-0" style="font-weight:900;">{{ opp.title }}</h5>
+</div>
+
+<!-- Meta grid -->
+<div class="px-4 py-3 border-bottom">
+    <div class="row g-2">
+
+        <div class="col-6">
+            <div class="small text-muted mb-1">Category</div>
+            <div class="fw-semibold small">{{ opp.category.name|default:"—" }}</div>
+        </div>
+
+        <div class="col-6">
+            <div class="small text-muted mb-1">Location</div>
+            <div class="fw-semibold small">{{ opp.location|default:"—" }}</div>
+        </div>
+
+        <div class="col-6">
+            <div class="small text-muted mb-1">Deadline</div>
+            {% if opp.deadline %}
+                {% if deadline_passed %}
+                <div class="fw-semibold small text-danger">
+                    {{ opp.deadline|date:"M d, Y" }} <span class="fw-normal">(expired)</span>
+                </div>
+                {% elif deadline_warning %}
+                <div class="fw-semibold small text-warning">
+                    {{ opp.deadline|date:"M d, Y" }}
+                    {% if days_left == 0 %}<span class="fw-normal">(today)</span>
+                    {% elif days_left == 1 %}<span class="fw-normal">(tomorrow)</span>
+                    {% else %}<span class="fw-normal">({{ days_left }} days left)</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="fw-semibold small">{{ opp.deadline|date:"M d, Y" }}</div>
+                {% endif %}
+            {% else %}
+            <div class="fw-semibold small text-muted">No Deadline</div>
+            {% endif %}
+        </div>
+
+        <div class="col-6">
+            <div class="small text-muted mb-1">Avg Rating</div>
+            <div class="fw-semibold small">
+                {% if opp.avg_rating %}
+                <i class="bi bi-star-fill" style="color:#FBBF24;"></i> {{ opp.avg_rating }}/5
+                <span class="fw-normal text-muted">({{ opp.ratings.count }} rating{{ opp.ratings.count|pluralize }})</span>
+                {% else %}
+                No ratings yet
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Description -->
+<div class="px-4 py-3 border-bottom">
+    <div class="small text-muted mb-2">Description</div>
+    {% if opp.description %}
+    <div class="small" style="max-height:180px; overflow-y:auto; line-height:1.6; white-space:pre-wrap;">{{ opp.description }}</div>
+    {% else %}
+    <div class="small text-muted fst-italic">No description available.</div>
+    {% endif %}
+</div>
+
+<!-- Action buttons -->
+<div class="px-4 py-3 d-flex flex-wrap gap-2">
+
+    <!-- Apply -->
+    {% if opp.status == "open" and opp.source_link %}
+    <a href="{{ opp.source_link }}" target="_blank" rel="noopener" class="btn btn-view">
+        <i class="bi bi-box-arrow-up-right me-1"></i> Apply
+    </a>
+    {% else %}
+    <button class="btn btn-view disabled" title="This opportunity is closed" disabled>
+        <i class="bi bi-box-arrow-up-right me-1"></i> Apply
+    </button>
+    {% endif %}
+
+    <!-- Bookmark (HTMX-swappable) -->
+    {% if request.user.is_authenticated %}
+    {% include "pages/partials/_bookmark_btn.html" %}
+    {% endif %}
+
+    <!-- Report -->
+    {% if request.user.is_authenticated %}
+        {% if already_reported %}
+        <button class="btn btn-outline-neutral d-flex align-items-center gap-2 px-3 py-2 rounded-xl" disabled>
+            <i class="bi bi-flag-fill text-warning"></i><span>Reported</span>
+        </button>
+        {% else %}
+        <button class="btn btn-outline-neutral d-flex align-items-center gap-2 px-3 py-2 rounded-xl"
+                data-bs-toggle="modal" data-bs-target="#reportModal">
+            <i class="bi bi-flag"></i><span>Report</span>
+        </button>
+        {% endif %}
+    {% endif %}
+
+    <!-- Rate -->
+    {% if request.user.is_authenticated %}
+        {% if opp.status == "closed" %}
+        <button class="btn btn-outline-neutral d-flex align-items-center gap-2 px-3 py-2 rounded-xl"
+                data-bs-toggle="modal" data-bs-target="#rateModal">
+            <i class="bi bi-star{% if existing_rating %}-fill text-warning{% endif %}"></i>
+            <span>{% if existing_rating %}Edit Rating{% else %}Rate{% endif %}</span>
+        </button>
+        {% else %}
+        <div class="d-flex align-items-center small text-muted fst-italic mt-1 w-100">
+            <i class="bi bi-info-circle me-1"></i> Rate after completing this co-op.
+        </div>
+        {% endif %}
+    {% endif %}
+
+</div>
+
+<!-- Report modal -->
+{% if request.user.is_authenticated and not already_reported %}
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:560px;">
+        <form method="post" action="{% url 'report_opportunity' opp.id %}">
+            {% csrf_token %}
+            <div class="modal-content rounded-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="reportModalLabel">Report Opportunity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <label class="form-label fw-semibold">Reason</label>
+                    <select name="report_type" class="form-select rounded-xl mb-3" required>
+                        <option value="">Select a reason…</option>
+                        <option value="broken_link">Broken Link</option>
+                        <option value="wrong_deadline">Wrong Deadline</option>
+                        <option value="wrong_location">Wrong Location</option>
+                        <option value="duplicate">Duplicate</option>
+                        <option value="scam">Scam</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <label class="form-label fw-semibold">Details <span class="fw-normal text-muted">(optional)</span></label>
+                    <textarea name="description" class="form-control rounded-xl" rows="3"
+                              placeholder="Tell us more about the issue"></textarea>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-neutral" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-cta">Submit Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Rate modal (only for closed opportunities) -->
+{% if request.user.is_authenticated and opp.status == "closed" %}
+<div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalLabel" aria-hidden="true" data-bs-backdrop="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3">
+
+            <!-- Step 1: Confirmation (skip for existing rating edits) -->
+            {% if not existing_rating %}
+            <div id="rateStep1">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="rateModalLabel">Before You Rate</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-3 pb-2">
+                    <div class="d-flex align-items-start gap-3 p-3 rounded-3 mb-3" style="background:rgba(0,119,255,.05); border:1px solid rgba(0,119,255,.12);">
+                        <i class="bi bi-shield-check fs-4 text-brand mt-1"></i>
+                        <div>
+                            <div class="fw-semibold mb-1">Confirm your experience</div>
+                            <div class="small text-muted">Ratings are only meaningful when submitted by students who actually completed the co-op.</div>
+                        </div>
+                    </div>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="confirmCompleted">
+                        <label class="form-check-label fw-semibold" for="confirmCompleted">
+                            I confirm that I have completed this co-op training.
+                        </label>
+                    </div>
+                    <div id="confirmError" class="text-danger small mt-2" style="display:none;">
+                        <i class="bi bi-exclamation-circle me-1"></i>You must confirm you completed this training before rating.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-neutral" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-cta" id="confirmNextBtn">
+                        Next <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Step 2: Rating form -->
+            <div id="rateStep2" {% if not existing_rating %}style="display:none;"{% endif %}>
+                <form method="post" action="{% url 'rate_opportunity' opp.id %}">
+                    {% csrf_token %}
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">
+                            {% if existing_rating %}Edit Your Rating{% else %}Rate This Opportunity{% endif %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body pt-2">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-1">Learning Value</label>
+                            <div class="small text-muted mb-2">How much did you learn?</div>
+                            <div class="star-group">
+                                {% for v in star_values %}
+                                <input type="radio" name="learning_value" id="lv_{{ v }}" value="{{ v }}"
+                                    {% if existing_rating and existing_rating.learning_value == v %}checked{% endif %}
+                                    required>
+                                <label for="lv_{{ v }}"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-1">Work Environment</label>
+                            <div class="small text-muted mb-2">How was the workplace?</div>
+                            <div class="star-group">
+                                {% for v in star_values %}
+                                <input type="radio" name="work_env" id="we_{{ v }}" value="{{ v }}"
+                                    {% if existing_rating and existing_rating.work_env == v %}checked{% endif %}
+                                    required>
+                                <label for="we_{{ v }}"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-1">Mentorship</label>
+                            <div class="small text-muted mb-2">How was the guidance you received?</div>
+                            <div class="star-group">
+                                {% for v in star_values %}
+                                <input type="radio" name="mentorship" id="me_{{ v }}" value="{{ v }}"
+                                    {% if existing_rating and existing_rating.mentorship == v %}checked{% endif %}
+                                    required>
+                                <label for="me_{{ v }}"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-1">Outcome</label>
+                            <div class="small text-muted mb-2">Did it help your career?</div>
+                            <div class="star-group">
+                                {% for v in star_values %}
+                                <input type="radio" name="outcome" id="ou_{{ v }}" value="{{ v }}"
+                                    {% if existing_rating and existing_rating.outcome == v %}checked{% endif %}
+                                    required>
+                                <label for="ou_{{ v }}"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-outline-neutral" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cta">
+                            {% if existing_rating %}Update Rating{% else %}Submit Rating{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var modal = document.getElementById('rateModal');
+    if (!modal) return;
+
+    modal.addEventListener('hidden.bs.modal', function () {
+        var step1 = document.getElementById('rateStep1');
+        var step2 = document.getElementById('rateStep2');
+        var cb    = document.getElementById('confirmCompleted');
+        var err   = document.getElementById('confirmError');
+        if (step1) { step1.style.display = ''; }
+        if (step2) { step2.style.display = 'none'; }
+        if (cb)    { cb.checked = false; }
+        if (err)   { err.style.display = 'none'; }
+    });
+
+    var nextBtn = document.getElementById('confirmNextBtn');
+    if (!nextBtn) return;
+
+    nextBtn.addEventListener('click', function () {
+        var cb  = document.getElementById('confirmCompleted');
+        var err = document.getElementById('confirmError');
+        if (!cb.checked) {
+            err.style.display = 'block';
+            return;
+        }
+        err.style.display = 'none';
+        document.getElementById('rateStep1').style.display = 'none';
+        document.getElementById('rateStep2').style.display = '';
+    });
+})();
+</script>
+{% endif %}

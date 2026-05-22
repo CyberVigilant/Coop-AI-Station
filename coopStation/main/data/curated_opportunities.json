@@ -1,0 +1,102 @@
+[
+  {
+    "company": "Saudi Tadawul Group",
+    "title": "Cooperative Training Program (Co-op)",
+    "category": "Finance",
+    "major": "Business / Engineering / Marketing / IT",
+    "location": "Riyadh,Riyadh",
+    "deadline": "2026-12-31",
+    "status": "open",
+    "source_link": "seed://curated/saudi-tadawul-group/cooperative-training-program"
+  },
+  {
+    "company": "AON",
+    "title": "IT Co-op Trainee",
+    "category": "Computer Science & IT",
+    "major": "IT / Computer Science / Information Systems",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/aon/it-coop-trainee"
+  },
+  {
+    "company": "Deloitte",
+    "title": "Jusoor Co-op / Internship Program (Eastern Province)",
+    "category": "Business & Management",
+    "major": "Business / IT / CS / Engineering / Finance / Design / HR (see details)",
+    "location": "Eastern Province,Khobar",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/deloitte/jusoor-program"
+  },
+  {
+    "company": "Webook.com",
+    "title": "COOP Training Opportunities (Multiple Tracks)",
+    "category": "Business & Management",
+    "major": "Project Management / Technology / Finance / Marketing / Business Dev",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/webook/coop-training"
+  },
+  {
+    "company": "Digital Government Authority",
+    "title": "برنامج ميدان للتدريب التعاوني (Co-op)",
+    "category": "Information Systems",
+    "major": "IT / CS / CE / SE / IS / Business / Law / Economics (see details)",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/dga/maydan"
+  },
+  {
+    "company": "GOSI",
+    "title": "برنامج التدريب التعاوني (Co-op)",
+    "category": "Business & Management",
+    "major": "Business / Finance / IS (general)",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/gosi/coop-program"
+  },
+  {
+    "company": "TAWAL",
+    "title": "Co-op Training Program",
+    "category": "Engineering",
+    "major": "Engineering / CS / Finance / Law / Marketing / MIS (see details)",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/tawal/coop-training"
+  },
+  {
+    "company": "SAB",
+    "title": "COOP Program",
+    "category": "Business & Management",
+    "major": "Business / Finance / Accounting / MIS / HR / CS / IS / IT / Engineering",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "closed",
+    "source_link": "seed://curated/sab/coop-program"
+  },
+  {
+    "company": "JASARA PMC",
+    "title": "Project Management Co-op",
+    "category": "Business & Management",
+    "major": "Project Management / Engineering / Business",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/jasara/pm-coop"
+  },
+  {
+    "company": "Riyadh Air",
+    "title": "COOP Internship Program",
+    "category": "Business & Management",
+    "major": "General COOP (varies)",
+    "location": "Riyadh,Riyadh",
+    "deadline": null,
+    "status": "open",
+    "source_link": "seed://curated/riyadh-air/coop-internship"
+  }
+]

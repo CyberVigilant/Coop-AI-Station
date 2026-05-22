@@ -1,0 +1,99 @@
+<div class="card border-0 shadow-sm rounded-3 mt-3">
+    <div class="card-body p-0">
+
+        <!-- Panel header -->
+        <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="fw-bold small">
+                    <i class="bi bi-list-check me-1 text-primary"></i>
+                    Results — {{ session.run_at|date:"M d, Y · H:i" }}
+                </span>
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3">{{ session.checked }} checked</span>
+                <span class="badge rounded-pill bg-danger-subtle text-danger px-3">{{ session.auto_closed }} auto-closed</span>
+                {% if session.errors %}
+                <span class="badge rounded-pill bg-secondary-subtle text-muted px-3">{{ session.errors }} error{{ session.errors|pluralize }}</span>
+                {% endif %}
+                {% if session.auto_closed == 0 and session.errors == 0 %}
+                <span class="badge rounded-pill bg-success-subtle text-success px-3">All still open</span>
+                {% endif %}
+            </div>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                    onclick="document.getElementById('monitor-results-panel').style.display='none'">
+                <i class="bi bi-chevron-up me-1"></i>Collapse
+            </button>
+        </div>
+
+        <!-- Results table -->
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Opportunity</th>
+                    <th>Company</th>
+                    <th>Location</th>
+                    <th>Deadline</th>
+                    <th>Previous</th>
+                    <th>AI Decision</th>
+                    <th class="pe-4">Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                <tr style="{% if r.ai_decision == 'auto_closed' %}background:rgba(239,68,68,.05);{% elif r.ai_decision == 'error' %}background:rgba(107,114,128,.06);{% endif %}">
+
+                    <td class="ps-4 fw-semibold" style="max-width:200px;">
+                        {% if r.opportunity %}
+                            {% if r.opportunity.source_link %}
+                            <a href="{{ r.opportunity.source_link }}" target="_blank" rel="noopener"
+                               class="text-dark text-decoration-none d-block text-truncate"
+                               title="{{ r.opportunity.title }}">{{ r.opportunity.title }}</a>
+                            {% else %}
+                            <span class="text-truncate d-block">{{ r.opportunity.title }}</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted fst-italic">Deleted</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-muted small">{{ r.opportunity.company|default:"—" }}</td>
+                    <td class="text-muted small">{{ r.opportunity.location|default:"—" }}</td>
+                    <td class="text-muted small" style="white-space:nowrap;">
+                        {% if r.opportunity.deadline %}{{ r.opportunity.deadline }}{% else %}No Deadline{% endif %}
+                    </td>
+
+                    <td>
+                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2" style="font-size:.78rem;">
+                            <i class="bi bi-circle-fill me-1" style="font-size:.4rem;vertical-align:middle;"></i>Open
+                        </span>
+                    </td>
+
+                    <td>
+                        {% if r.ai_decision == "auto_closed" %}
+                        <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2" style="font-size:.78rem;">
+                            <i class="bi bi-x-circle me-1"></i>Auto-Closed
+                        </span>
+                        {% elif r.ai_decision == "error" %}
+                        <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3 py-2" style="font-size:.78rem;">
+                            <i class="bi bi-exclamation-circle me-1"></i>Error
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2" style="font-size:.78rem;">
+                            <i class="bi bi-check-circle me-1"></i>Still Open
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-muted small pe-4" style="max-width:260px;">
+                        <span title="{{ r.reason }}">{{ r.reason|truncatechars:90 }}</span>
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No results recorded for this session.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</div>

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Submission Received | Coop AI Station{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 560px;">
+    <div class="card border-0 rounded-4 shadow-sm text-center">
+        <div class="card-body p-5">
+
+            <div class="mb-4 d-flex justify-content-center">
+                <div style="width:72px;height:72px;border-radius:50%;background:rgba(6,214,160,.14);display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-check-lg" style="font-size:2rem;color:#06D6A0;"></i>
+                </div>
+            </div>
+
+            <h1 class="h4 fw-bold mb-2">Thank you for your submission!</h1>
+            <p class="text-secondary mb-4">
+                We've received your opportunity. Our team will review it as soon as possible and it will be published once verified.
+            </p>
+
+            {% for message in messages %}
+            {% if 'submission' in message.extra_tags %}
+            <div class="alert alert-{{ message.tags }} rounded-3 text-start mb-2" role="alert">
+                {{ message }}
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            {% if ai_result == 'rejected' and failed_step %}
+            <div class="alert alert-warning rounded-3 text-start mt-3">
+                <p class="fw-semibold mb-1">
+                    <i class="bi bi-info-circle me-1"></i> Here's why your submission didn't pass:
+                </p>
+
+                {% if failed_step == 1 %}
+                <p class="mb-1">The link you provided appears to be unsafe or potentially harmful.</p>
+                <p class="text-muted small mb-0">
+                    <strong>What to do:</strong> Double-check the URL and make sure it comes directly from an official company website — not a shortened link or unfamiliar domain.
+                </p>
+
+                {% elif failed_step == 2 %}
+                <p class="mb-1">We couldn't confirm that the link is from a recognized or trusted source.</p>
+                <p class="text-muted small mb-0">
+                    <strong>What to do:</strong> Use a direct link to the company's official careers page. Avoid links from social media posts, group chats, or personal pages.
+                </p>
+
+                {% elif failed_step == 3 %}
+                <p class="mb-1">The opportunity no longer seems to be available at the link you provided.</p>
+                <p class="text-muted small mb-0">
+                    <strong>What to do:</strong> Check if the application deadline has passed or if the company has closed the listing. If it's still open, try submitting the direct link to the job posting.
+                </p>
+
+                {% elif failed_step == 4 %}
+                <p class="mb-1">The page content doesn't seem to match the opportunity details you entered.</p>
+                <p class="text-muted small mb-0">
+                    <strong>What to do:</strong> Make sure the title, company name, and description you filled in match exactly what's written on the linked page.
+                </p>
+                {% endif %}
+
+                <hr class="my-2">
+                <p class="text-muted small mb-0">
+                    Still not working even after following these steps?
+                    <a href="mailto:coopstation.team@gmail.com?subject=Submission%20Rejected%20-%20Need%20Help"
+                       class="fw-semibold text-decoration-none">
+                        <i class="bi bi-envelope me-1"></i>Let us know
+                    </a>
+                    and we'll take a look.
+                </p>
+            </div>
+            {% elif ai_result == 'rejected' or ai_result == 'flagged' %}
+            <p class="text-muted small mt-3 mb-4">
+                Think this decision was a mistake?
+                <a href="mailto:coopstation.team@gmail.com?subject=Submission%20Issue&body=Hello%2C%20I%20believe%20my%20submission%20was%20incorrectly%20rejected.%20Please%20review%20it."
+                   class="text-decoration-none fw-semibold">
+                    <i class="bi bi-envelope me-1"></i>Let us know
+                </a>
+            </p>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <a href="{% url 'opportunities' %}" class="btn btn-cta">
+                    <i class="bi bi-briefcase me-1"></i> Browse Opportunities
+                </a>
+                <a href="{% url 'submit_opportunity' %}" class="btn btn-outline-neutral">
+                    Submit Another
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
