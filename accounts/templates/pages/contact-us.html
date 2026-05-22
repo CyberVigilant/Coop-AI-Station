@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Contact Us | Coop AI Station{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+
+            <!-- Page header -->
+            <div class="text-center mb-4">
+                <h1 class="fw-bold mb-2">Contact Us</h1>
+                <p class="text-secondary mb-0">Have a question or need support? We're here to help.</p>
+            </div>
+
+            <!-- Contact card -->
+            <div class="card border-0 rounded-4 shadow-sm">
+                <div class="card-body p-5 text-center">
+                    <h2 class="fw-bold h5 mb-2">Reach Us By Email</h2>
+                    <p class="text-secondary mb-4">
+                        Send us a message and we'll get back to you as soon as possible.
+                    </p>
+                    <a href="mailto:coopstation.team@gmail.com"
+                       class="btn btn-outline-primary rounded-3 px-4 py-2 fw-semibold">
+                        <i class="bi bi-envelope me-2"></i>coopstation.team@gmail.com
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

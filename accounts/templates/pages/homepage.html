@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Coop AI Station - Find Your Co-op Opportunity{% endblock %}
+
+{% block extra_head %}
+<style>
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+  }
+
+  .preview-badge {
+    background: rgba(6, 214, 160, .16);
+    color: #0b6b52;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: .68rem;
+  }
+
+  .preview-badge-closing {
+    background: rgba(255, 129, 71, .18);
+    color: #8a3b12;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-weight: 700;
+    font-size: .68rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===========================
+     HERO
+=========================== -->
+<section class="py-5 bg-soft">
+  <div class="container py-4">
+    <div class="row align-items-center g-5">
+
+      <!-- Left: copy -->
+      <div class="col-lg-6">
+        <span class="badge rounded-pill mb-3 px-3 py-2"
+          style="background:rgba(0,119,255,.10);color:var(--brand-blue);font-weight:700;font-size:.8rem;letter-spacing:.3px;">
+          Built for Saudi University Students
+        </span>
+
+        <h1 class="display-5 fw-bold lh-sm mb-3">
+          Find Your Co-op Opportunity
+          <span class="text-brand">Faster</span>
+          with Coop AI Station
+        </h1>
+
+        <p class="lead text-secondary" style="max-width: 34rem; font-size: 1.05rem;">
+          Stop scrolling scattered company websites. Coop AI Station brings every verified
+          co-op listing into one searchable, filterable place — matched to your major
+          and updated automatically.
+        </p>
+
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          {% if user.is_authenticated %}
+          <a href="{% url 'opportunities' %}" class="btn btn-cta btn-lg">Browse Opportunities</a>
+          {% else %}
+          <a href="{% url 'register' %}" class="btn btn-cta btn-lg">Get Started Free</a>
+          <a href="{% url 'register' %}" class="btn btn-outline-neutral btn-lg">Login</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right: live opportunities preview -->
+      <div class="col-lg-6">
+        <div class="rounded-4 shadow-sm overflow-hidden border" style="background:#fff;">
+
+          <!-- Fake browser bar -->
+          <div class="d-flex align-items-center gap-2 px-3 py-2" style="background:#111111;">
+            <div style="width:10px;height:10px;border-radius:50%;background:#ff5f57;flex-shrink:0;"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#febc2e;flex-shrink:0;"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#28c840;flex-shrink:0;"></div>
+            <span class="ms-2" style="font-size:.7rem;color:rgba(255,255,255,.45);">coopstation.sa/opportunities</span>
+          </div>
+
+          <!-- Preview body -->
+          <div class="p-3">
+
+            <!-- Search bar mock -->
+            <div class="d-flex align-items-center gap-2 rounded-3 mb-3 px-3"
+              style="background:#f5f5f5;height:38px;">
+              <i class="bi bi-search" style="color:#9ca3af;font-size:.8rem;"></i>
+              <span style="font-size:.8rem;color:#9ca3af;">Search job titles, keywords, companies...</span>
+            </div>
+
+            <!-- Table mock -->
+            <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+              <thead>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                  <th
+                    style="padding:6px 8px;color:#9ca3af;font-weight:700;text-transform:uppercase;font-size:.63rem;letter-spacing:.06em;">
+                    Company</th>
+                  <th
+                    style="padding:6px 8px;color:#9ca3af;font-weight:700;text-transform:uppercase;font-size:.63rem;letter-spacing:.06em;">
+                    Title</th>
+                  <th
+                    style="padding:6px 8px;color:#9ca3af;font-weight:700;text-transform:uppercase;font-size:.63rem;letter-spacing:.06em;">
+                    Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid #f9f9f9;">
+                  <td style="padding:8px;font-weight:600;color:#111;">STC</td>
+                  <td style="padding:8px;">
+                    <div style="font-weight:700;color:#0077FF;">Software Engineer Intern</div>
+                    <div style="color:#9ca3af;font-size:.7rem;">Riyadh · CS & IT</div>
+                  </td>
+                  <td style="padding:8px;"><span class="preview-badge">Open</span></td>
+                </tr>
+                <tr style="border-bottom:1px solid #f9f9f9;">
+                  <td style="padding:8px;font-weight:600;color:#111;">Aramco</td>
+                  <td style="padding:8px;">
+                    <div style="font-weight:700;color:#0077FF;">Data Analyst Co-op</div>
+                    <div style="color:#9ca3af;font-size:.7rem;">Dhahran · Data & AI</div>
+                  </td>
+                  <td style="padding:8px;"><span class="preview-badge">Open</span></td>
+                </tr>
+                <tr>
+                  <td style="padding:8px;font-weight:600;color:#111;">KPMG</td>
+                  <td style="padding:8px;">
+                    <div style="font-weight:700;color:#0077FF;">Business Analyst</div>
+                    <div style="color:#9ca3af;font-size:.7rem;">Jeddah · Business</div>
+                  </td>
+                  <td style="padding:8px;"><span class="preview-badge-closing">Closing Soon</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="text-center pt-2 pb-1" style="font-size:.72rem;color:#9ca3af;border-top:1px solid #f5f5f5;margin-top:8px;">
+              Showing 3 of 240+ active listings
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- end right col -->
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     FEATURES
+=========================== -->
+<section class="py-5">
+  <div class="container py-3">
+
+    <div class="text-center mb-5">
+      <h2 class="fw-bold mb-2">Why Choose Coop AI Station?</h2>
+      <p class="text-secondary mb-0" style="max-width: 42rem; margin: 0 auto;">
+        Everything you need to find, track, and land your co-op — all in one place.
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0 rounded-xl p-1">
+          <div class="card-body">
+            <div class="feature-icon mb-3"
+              style="background:rgba(0,119,255,.10);color:var(--brand-blue);">
+              <i class="bi bi-collection"></i>
+            </div>
+            <h3 class="h5 fw-bold mb-2">Centralized Listings</h3>
+            <p class="text-secondary mb-0">
+              All co-op positions from company career pages and verified sources aggregated
+              in one searchable dashboard — no more scattered job hunting.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0 rounded-xl p-1">
+          <div class="card-body">
+            <div class="feature-icon mb-3"
+              style="background:rgba(6,214,160,.12);color:#0b6b52;">
+              <i class="bi bi-funnel"></i>
+            </div>
+            <h3 class="h5 fw-bold mb-2">Smart Filters</h3>
+            <p class="text-secondary mb-0">
+              Filter by major, city, and deadline to instantly surface roles that actually
+              match your profile — no irrelevant noise.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0 rounded-xl p-1">
+          <div class="card-body">
+            <div class="feature-icon mb-3"
+              style="background:rgba(255,129,71,.12);color:#8a3b12;">
+              <i class="bi bi-bookmark-check"></i>
+            </div>
+            <h3 class="h5 fw-bold mb-2">Track & Bookmark</h3>
+            <p class="text-secondary mb-0">
+              Save opportunities you're interested in, get notified before deadlines close,
+              and never miss a position again.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ===========================
+     CTA BAND
+=========================== -->
+<section class="py-5">
+  <div class="container py-3">
+    <div class="p-5 rounded-4 cta-panel">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h2 class="fw-bold mb-2 text-white">Ready to start your journey?</h2>
+          <p class="mb-0" style="max-width:38rem;">
+            Create a free account and start browsing hundreds of co-op opportunities
+            matched to your major today.
+          </p>
+        </div>
+        <div class="col-lg-4 d-flex gap-2 flex-wrap justify-content-lg-end">
+          {% if user.is_authenticated %}
+          <a class="btn btn-lg btn-cta" href="{% url 'opportunities' %}">Browse Now</a>
+          {% else %}
+          <a class="btn btn-lg btn-cta" href="{% url 'register' %}">Get Started Free</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

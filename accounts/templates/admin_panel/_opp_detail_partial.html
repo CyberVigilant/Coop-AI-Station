@@ -1,0 +1,62 @@
+<div class="p-4">
+    <div class="row g-3">
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Title</div>
+            <div class="fw-semibold">{{ opp.title|default:"—" }}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Company</div>
+            <div>{{ opp.company|default:"—" }}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Category</div>
+            <div>{{ opp.category.name|default:"—" }}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Status</div>
+            <div>
+                {% if opp.status == "open" %}
+                <span class="badge rounded-pill bg-success-subtle text-success px-3">Open</span>
+                {% else %}
+                <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3">Closed</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Region</div>
+            <div>{{ region|default:"—" }}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">City</div>
+            <div>{{ city|default:"—" }}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Deadline</div>
+            <div>{% if opp.deadline %}{{ opp.deadline|date:"M d, Y" }}{% else %}—{% endif %}</div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Source Link</div>
+            <div>
+                {% if opp.source_link %}
+                <a href="{{ opp.source_link }}" target="_blank" rel="noopener" class="text-break">{{ opp.source_link }}</a>
+                {% else %}—{% endif %}
+            </div>
+        </div>
+
+        {% if opp.description %}
+        <div class="col-12">
+            <div class="text-muted small fw-semibold text-uppercase mb-1">Description</div>
+            <div class="p-3 rounded-3 small" style="background:#f8f9fa; white-space:pre-wrap;">{{ opp.description }}</div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>

@@ -1,0 +1,160 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <select name="status" class="form-select form-select-sm rounded-3">
+                    <option value="">All statuses</option>
+                    <option value="pending"  {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+                    <option value="resolved" {% if status_filter == "resolved" %}selected{% endif %}>Resolved</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-4">
+                <select name="type" class="form-select form-select-sm rounded-3">
+                    <option value="">All types</option>
+                    {% for val, label in report_types %}
+                    <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-sm btn-dark rounded-3">Filter</button>
+                <a href="{% url 'admin_reports' %}" class="btn btn-sm btn-outline-secondary rounded-3 ms-1">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Opportunity</th>
+                    <th>Reporter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="pe-4 text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr style="cursor:pointer;"
+                    data-bs-toggle="modal"
+                    data-bs-target="#reportDetailModal"
+                    data-title="{{ report.opportunity.title }}"
+                    data-reporter="{{ report.student.display_name }}"
+                    data-type="{{ report.get_report_type_display }}"
+                    data-description="{{ report.description|default:'' }}"
+                    data-date="{{ report.created_at|date:'M d, Y · H:i' }}"
+                    data-status="{{ report.status }}"
+                    data-report-id="{{ report.id }}">
+                    <td class="ps-4 fw-semibold" style="max-width:160px;">
+                        <span class="text-truncate d-block text-dark">{{ report.opportunity.title }}</span>
+                    </td>
+                    <td class="small">{{ report.student.display_name }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark fw-normal rounded-pill">{{ report.get_report_type_display }}</span>
+                    </td>
+                    <td class="text-muted small" style="max-width:180px;">
+                        <div class="text-truncate">{{ report.description|default:"N/A" }}</div>
+                    </td>
+                    <td class="text-muted small">{{ report.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        {% if report.status == "pending" %}
+                        <span class="badge rounded-pill" style="background:rgba(255,193,7,.15);color:#856404;">Pending</span>
+                        {% else %}
+                        <span class="badge rounded-pill bg-success-subtle text-success">Resolved</span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end" onclick="event.stopPropagation();">
+                        {% if report.status == "pending" %}
+                        <form method="post" action="{% url 'admin_resolve_report' report.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-success rounded-3">
+                                <i class="bi bi-check-lg me-1"></i>Resolve
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="text-muted small">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">No reports found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ── Report Detail Modal ───────────────────────────────────────────────────── -->
+<div class="modal fade" id="reportDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom pb-3">
+                <div>
+                    <h6 class="modal-title fw-bold mb-0">
+                        <i class="bi bi-flag me-2 text-muted"></i>Report Details
+                    </h6>
+                    <small class="text-muted" id="reportModalTitle"></small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <dl class="row g-0 mb-0" id="reportModalBody" style="row-gap:.75rem;">
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('reportDetailModal').addEventListener('show.bs.modal', function (e) {
+    var row = e.relatedTarget;
+    var title       = row.dataset.title       || '';
+    var reporter    = row.dataset.reporter    || '';
+    var type        = row.dataset.type        || '';
+    var description = row.dataset.description || '';
+    var date        = row.dataset.date        || '';
+    var status      = row.dataset.status      || '';
+
+    document.getElementById('reportModalTitle').textContent = title;
+
+    function field(label, value) {
+        var v = value && value.trim() ? value : 'N/A';
+        return '<dt class="col-4 text-muted small fw-semibold">' + label + '</dt>' +
+               '<dd class="col-8 small mb-0">' + v + '</dd>';
+    }
+
+    var statusBadge = status === 'pending'
+        ? '<span class="badge rounded-pill" style="background:rgba(255,193,7,.15);color:#856404;">Pending</span>'
+        : '<span class="badge rounded-pill bg-success-subtle text-success">Resolved</span>';
+
+    document.getElementById('reportModalBody').innerHTML =
+        field('Opportunity', title) +
+        field('Reporter', reporter) +
+        field('Type', type) +
+        field('Date', date) +
+        '<dt class="col-4 text-muted small fw-semibold">Status</dt><dd class="col-8 small mb-0">' + statusBadge + '</dd>' +
+        '<dt class="col-4 text-muted small fw-semibold">Description</dt>' +
+        '<dd class="col-8 small mb-0" style="white-space:pre-wrap;line-height:1.6;">' +
+            (description && description.trim() ? description : 'N/A') + '</dd>';
+});
+</script>
+{% endblock %}

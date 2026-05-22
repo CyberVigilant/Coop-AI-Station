@@ -1,0 +1,61 @@
+{% extends "admin_panel/base_admin.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block nav_audit %}active{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Admin</th>
+                    <th>Action</th>
+                    <th>Target Type</th>
+                    <th>Target</th>
+                    <th class="pe-4">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in page_obj %}
+                <tr>
+                    <td class="ps-4">{{ log.admin.display_name|default:"—" }}</td>
+                    <td><span class="badge bg-light text-dark fw-normal small">{{ log.action }}</span></td>
+                    <td class="text-muted small">{{ log.target_type }}</td>
+                    <td class="small">{{ log.target_label|default:"—" }}</td>
+                    <td class="pe-4 text-muted small">{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-5">No audit log entries yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 border-top">
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

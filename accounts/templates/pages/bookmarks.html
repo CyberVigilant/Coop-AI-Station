@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Bookmarks | Coop AI Station{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="mb-4">
+        <h1 class="fw-black" style="font-weight: 900;">My Bookmarked Opportunities</h1>
+        <p class="mb-0">Manage and track the co-op positions you're interested in.</p>
+    </div>
+
+    <div class="card rounded-xl shadow-sm">
+        <div class="card-body p-0">
+
+            <div id="bookmark-table" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-white">
+                        <tr>
+                            <th class="ps-4">Company</th>
+                            <th>Position</th>
+                            <th>Deadline</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for bm in bookmarks %}
+                        <tr class="op-row"
+                            style="cursor:pointer;"
+                            hx-get="{% url 'opp_detail' bm.opportunity.id %}"
+                            hx-target="#oppDetailBody"
+                            hx-indicator="#oppDetailSpinner"
+                            data-bs-toggle="modal"
+                            data-bs-target="#oppDetailModal">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box-sm"><i class="bi bi-building"></i></div>
+                                    <div class="fw-semibold">
+                                        {{ bm.opportunity.company|default:"Unknown Company" }}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="fw-bold text-brand">
+                                    {{ bm.opportunity.title }}
+                                </div>
+
+                                <div class="small text-muted mt-1">
+                                    {{ bm.opportunity.location|default:"" }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if bm.opportunity.deadline %}
+                                <div class="fw-semibold">{{ bm.opportunity.deadline }}</div>
+                                {% else %}
+                                <div class="text-muted">No deadline</div>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end pe-4" onclick="event.stopPropagation()">
+                                <div class="d-inline-flex align-items-center gap-2">
+                                    {% if bm.opportunity.source_link %}
+                                    <a class="btn btn-view" href="{{ bm.opportunity.source_link }}" target="_blank">
+                                        Apply
+                                    </a>
+                                    {% endif %}
+
+                                    <form method="post" action="{% url 'toggle_bookmark' bm.opportunity.id %}"
+                                        class="m-0">
+                                        {% csrf_token %}
+                                        <button
+                                            class="btn btn-sm btn-outline-neutral d-flex align-items-center justify-content-center"
+                                            type="submit" title="Remove bookmark" style="width: 40px; height: 40px;">
+                                            <i class="bi bi-bookmark-fill text-brand"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                No bookmarks yet.
+                                <a href="{% url 'opportunities' %}" class="text-brand fw-semibold">Browse opportunities</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top">
+                    <div class="small text-muted">Showing {{ bookmarks_count }} bookmarked
+                        opportunit{{ bookmarks_count|pluralize:"y,ies" }}</div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Opportunity detail modal -->
+<div class="modal fade" tabindex="-1" id="oppDetailModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:560px;">
+        <div class="modal-content rounded-3 overflow-hidden">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold mb-0">Opportunity Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="oppDetailBody">
+                <div class="p-5 text-center text-muted" id="oppDetailSpinner">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.body.addEventListener("htmx:configRequest", function (e) {
+        e.detail.headers["X-CSRFToken"] =
+            document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+    });
+
+    document.body.addEventListener("htmx:afterSwap", function (e) {
+        if (e.detail.target && e.detail.target.id === "oppDetailBody") {
+            e.detail.target.querySelectorAll(".modal").forEach(function (modal) {
+                document.body.appendChild(modal);
+            });
+        }
+    });
+</script>
+{% endblock %}

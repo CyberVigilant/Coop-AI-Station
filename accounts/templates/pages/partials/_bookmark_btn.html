@@ -1,0 +1,11 @@
+<button
+    hx-post="{% url 'toggle_bookmark' opp.id %}"
+    hx-target="this"
+    hx-swap="outerHTML"
+    class="btn btn-outline-neutral d-flex align-items-center gap-2 px-3 py-2 rounded-xl">
+    {% if is_bookmarked %}
+    <i class="bi bi-bookmark-fill text-brand"></i><span>Saved</span>
+    {% else %}
+    <i class="bi bi-bookmark"></i><span>Save</span>
+    {% endif %}
+</button>

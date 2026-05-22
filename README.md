@@ -1,214 +1,102 @@
-# Coop Station 🚀
-University Co-op Opportunity Platform built with Django.
+# Co-op AI Station 🎓
 
-This guide explains how to run the project locally on **Windows** and **macOS** after downloading the project as a ZIP file or cloning it.
+An AI-powered platform that helps university students find co-op training opportunities in one place.
 
----
-
-## 📦 Requirements
-
-Before starting, make sure you have:
-
-- Python 3.10 or higher  
-- pip (comes with Python)  
-- pipenv  
-
-Check Python version:
-
-```bash
-python --version
-```
-
-or
-
-```bash
-python3 --version
-```
+The platform automatically discovers new opportunities using a search API, and validates every submission through an AI pipeline before publishing — so students always see accurate and trustworthy listings.
 
 ---
 
-## 🔧 Install pipenv (One Time)
+## Features
 
-### Windows
+- 🔍 **Automated Opportunity Discovery** — Serper API continuously searches for new co-op listings
+- ✅ **AI Validation Pipeline** — Every opportunity is verified using Groq + VirusTotal before going live
+- 🎓 **Student-Focused Interface** — Clean listings page built for university students
+- 🛠 **Admin Dashboard** — Full control panel for managing opportunities and users
+- 👤 **User Accounts** — Registration, login, and profile management
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Django (Python) |
+| Frontend | Bootstrap |
+| Database | PostgreSQL |
+| AI Validation | Groq API |
+| Opportunity Search | Serper API |
+| Security Check | VirusTotal API |
+| Task Scheduling | Django Scheduler |
+
+---
+
+## Project Structure
+
+```
+├── main/                        # Core app
+│   ├── views.py                 # Page logic
+│   ├── models.py                # Database models
+│   ├── forms.py                 # User forms
+│   ├── admin_views.py           # Admin dashboard
+│   ├── ai_validator.py          # AI validation logic
+│   ├── link_validator.py        # URL + VirusTotal checks
+│   ├── opportunity_observer.py  # Serper search integration
+│   └── scheduler.py             # Automated scheduling
+├── Conf/                        # Django settings & routing
+├── static/                      # Static files
+├── manage.py
+├── Pipfile
+└── .env.example                 # Environment variable template
+```
+
+---
+
+## Getting Started
+
+### Requirements
+
+- Python 3.10+
+- pipenv
 
 ```bash
 pip install pipenv
 ```
 
-### macOS
+### Setup
 
 ```bash
-python3 -m pip install --user pipenv
-```
-
-Verify installation:
-
-```bash
-pipenv --version
-```
-
----
-
-## 📥 Download Project
-
-### Option 1 (ZIP)
-
-1. Click **Code → Download ZIP**
-2. Extract the folder
-3. Open the folder in VS Code
-
-### Option 2 (Git)
-
-```bash
+# 1. Clone the repo
 git clone <repo-url>
-```
 
----
-
-## ⚙️ Setup Project
-
-Open terminal inside project folder.
-
-Install dependencies:
-
-```bash
+# 2. Install dependencies
 pipenv install
-```
 
-Activate environment:
-
-```bash
+# 3. Activate environment
 pipenv shell
-```
 
----
-
-## ▶️ Run Server
-
-```bash
-python manage.py runserver
-```
-
-or
-
-```bash
-pipenv run python manage.py runserver
-```
-
----
-
-## 🌐 Open in Browser
-
-```
-http://127.0.0.1:8000/
-```
-
----
-
-## 🗃 Database Setup (First Time Only)
-
-```bash
-python manage.py migrate
-```
-
-(Optional) Create admin user:
-
-```bash
-python manage.py createsuperuser
-```
-
----
-
-## 🔑 Environment Variables
-
-This project requires API keys that are NOT included in the repo.
-
-### Step 1 — Create your `.env` file
-
-In the project root (same folder as `manage.py`), create a file called `.env`.
-
-**macOS/Linux:**
-```bash
+# 4. Set up environment variables
 cp .env.example .env
-```
+# Open .env and fill in your API keys
 
-**Windows (Command Prompt):**
-```bash
-copy .env.example .env
-```
+# 5. Run migrations
+python manage.py migrate
 
-### Step 2 — Add the keys
-
-Open `.env` in any text editor and fill in the values you received:
-
-```
-GROQ_API_KEY=paste_your_groq_key_here
-SERPER_API_KEY=paste_your_serper_key_here
-```
-
-For example, if your Groq key is `gsk_abc123`, the file should look like:
-
-```
-GROQ_API_KEY=gsk_abc123
-SERPER_API_KEY=1234abcd...
-```
-
-No quotes, no spaces around the `=` sign.
-
-### Step 3 — Restart the server
-
-If the server is already running, stop it (`Ctrl+C`) and start it again:
-
-```bash
+# 6. Start the server
 python manage.py runserver
 ```
 
-The keys are loaded automatically on startup.
-
-> ⚠️ Do **not** commit your `.env` file — it is already in `.gitignore`.
+Open in browser: `http://127.0.0.1:8000/`
 
 ---
 
-## 🛑 Common Errors
+## Environment Variables
 
-### No module named django
-
-```bash
-pipenv shell
-```
-
-### python not found
-
-```bash
-python3 manage.py runserver
-```
-
----
-
-## 🚫 Do NOT Commit These Files
+Create a `.env` file based on `.env.example`:
 
 ```
-__pycache__/
-db.sqlite3
-.env
+GROQ_API_KEY=your_key_here
+SERPER_API_KEY=your_key_here
+VIRUSTOTAL_API_KEY=your_key_here
 ```
 
----
-
-## 👥 Team Workflow
-
-Each developer:
-
-- Downloads project  
-- Runs `pipenv install`  
-- Runs server locally  
-
-Virtual environments are NOT shared.
-
----
-
-## 📫 Support
-
-If setup fails, send a screenshot of the error in the group chat.
-
-Happy coding 🎉
+> ⚠️ Never commit your `.env` file. It is already excluded in `.gitignore`.

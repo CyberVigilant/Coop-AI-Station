@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% load logo_tags %}
+{% block title %}Opportunities | Coop AI Station{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Title -->
+    <div class="mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+        <div>
+            <h1 class="fw-black mb-1" style="font-weight: 900;">Coop Opportunities</h1>
+            <p class="text-secondary mb-0">Find your next university co-op placement from 250+ active listings.</p>
+        </div>
+        {% if request.user.is_authenticated %}
+        <a href="{% url 'submit_opportunity' %}" class="btn btn-cta text-nowrap">
+            <i class="bi bi-plus-circle me-2"></i>Submit Opportunity
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Search + Filters -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body p-4">
+
+            <!-- Search -->
+            <form method="get" action="{% url 'opportunities' %}" class="position-relative mb-3">
+                {% for cat_id in selected_category_ids %}<input type="hidden" name="category" value="{{ cat_id }}">{% endfor %}
+                {% if selected_region %}<input type="hidden" name="region" value="{{ selected_region }}">{% endif %}
+                {% if selected_city %}<input type="hidden" name="city" value="{{ selected_city }}">{% endif %}
+                {% if selected_status %}<input type="hidden" name="status" value="{{ selected_status }}">{% endif %}
+                <i class="bi bi-search search-icon"></i>
+                <input class="form-control form-control-lg input-icon"
+                    name="q"
+                    value="{{ q|default:'' }}"
+                    placeholder="Search for job titles, keywords, or companies..." />
+            </form>
+
+            <!-- Filter pills -->
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+
+                <!-- Major (multi-select via partial) -->
+                <div class="dropdown">
+                    <button class="btn filter-pill d-inline-flex align-items-center gap-2 dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-mortarboard"></i>
+                        {% if selected_category_ids and selected_category_ids|length == 1 and selected_category %}
+                        {{ selected_category.name }}
+                        {% elif selected_category_ids and selected_category_ids|length > 1 %}
+                        {{ selected_category_ids|length }} Majors
+                        {% else %}
+                        Major
+                        {% endif %}
+                    </button>
+
+                    <div class="dropdown-menu p-0 shadow rounded-3 overflow-hidden" style="min-width:540px;">
+                        {% include "pages/partials/_major_filter.html" %}
+                    </div>
+                </div>
+
+                <!-- Location (Region -> City) -->
+                <div class="dropdown">
+                    <button class="btn filter-pill d-inline-flex align-items-center gap-2 dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-geo-alt"></i>
+                        {% if selected_city %}{{ selected_city }}{% elif selected_region %}{{ selected_region }}{% else %}Location{% endif %}
+                    </button>
+
+                    <div class="dropdown-menu p-0 shadow" style="width: 520px;">
+                        <div class="d-flex" style="min-height: 280px;">
+
+                            <!-- Regions -->
+                            <div class="border-end" style="width: 45%;">
+                                <a class="dropdown-item fw-semibold" style="border:0;"
+                                    href="{{ clear_location_url }}">Any</a>
+                                <div class="dropdown-divider my-0"></div>
+                                <div id="regionList" class="list-group list-group-flush rounded-0"></div>
+                            </div>
+
+                            <!-- Cities -->
+                            <div style="width: 55%;">
+                                <div class="px-3 py-2 text-secondary small" id="cityHeader">Choose a region</div>
+                                <div id="cityList" class="list-group list-group-flush rounded-0"></div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status filter -->
+                <div class="dropdown">
+                    <button class="btn filter-pill d-inline-flex align-items-center gap-2 dropdown-toggle"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-record-circle"></i>
+                        {% if selected_status == "open" %}Open
+                        {% elif selected_status == "closed" %}Closed
+                        {% else %}Status{% endif %}
+                    </button>
+                    <div class="dropdown-menu shadow" style="min-width:160px;">
+                        <a class="dropdown-item{% if not selected_status %} fw-bold{% endif %}"
+                            href="{{ clear_status_url }}">Any</a>
+                        <div class="dropdown-divider my-1"></div>
+                        <a class="dropdown-item d-flex align-items-center gap-2{% if selected_status == 'open' %} active{% endif %}"
+                            href="{{ status_open_url }}">
+                            <span class="badge-status badge-active">Open</span>
+                        </a>
+                        <a class="dropdown-item d-flex align-items-center gap-2{% if selected_status == 'closed' %} active{% endif %}"
+                            href="{{ status_closed_url }}">
+                            <span class="badge-status badge-applied">Closed</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="vr mx-2"></div>
+
+                <a class="btn fw-bold text-brand" href="{{ clear_all_url }}">Clear All</a>
+
+            </div>
+
+            {% if location_menu %}
+            {{ location_menu|json_script:"location-data" }}
+            {% else %}
+            <script id="location-data" type="application/json">{}</script>
+            {% endif %}
+
+            <script>
+                (function () {
+                    const dataEl = document.getElementById('location-data');
+                    if (!dataEl) return;
+
+                    let locationData = {};
+                    try {
+                        locationData = JSON.parse(dataEl.textContent || '{}') || {};
+                    } catch (e) {
+                        locationData = {};
+                    }
+
+                    const regionList = document.getElementById('regionList');
+                    const cityList = document.getElementById('cityList');
+                    const cityHeader = document.getElementById('cityHeader');
+                    if (!regionList || !cityList || !cityHeader) return;
+
+                    const selectedRegion = "{{ selected_region|default_if_none:'' }}";
+                    const selectedCity = "{{ selected_city|default_if_none:'' }}";
+
+                    const majorsQS = "{{ majors_qs|default:'' }}";
+
+                    function makeHref(params) {
+                        const qs = params.toString();
+                        return qs ? (`?${qs}${majorsQS}`) : (`?${majorsQS.replace(/^&/, '')}`);
+                    }
+
+                    function renderCities(region) {
+                        cityList.innerHTML = '';
+                        if (!region || !locationData[region]) {
+                            cityHeader.textContent = 'Choose a region';
+                            return;
+                        }
+
+                        cityHeader.textContent = region;
+
+                        const regionOnly = document.createElement('a');
+                        regionOnly.className = 'list-group-item list-group-item-action text-secondary';
+                        const paramsRegion = new URLSearchParams();
+                        paramsRegion.set('region', region);
+                        regionOnly.href = makeHref(paramsRegion);
+                        regionOnly.textContent = 'Any city in this region';
+                        cityList.appendChild(regionOnly);
+
+                        (locationData[region] || []).forEach(function (row) {
+                            const city = row.city;
+                            const count = row.count;
+
+                            const a = document.createElement('a');
+                            a.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+
+                            const paramsCity = new URLSearchParams();
+                            paramsCity.set('region', region);
+                            paramsCity.set('city', city);
+                            a.href = makeHref(paramsCity);
+
+                            a.innerHTML = `<span>${city}</span><span class="text-primary fw-semibold">${count}</span>`;
+                            if (selectedCity && city === selectedCity) {
+                                a.classList.add('active');
+                            }
+                            cityList.appendChild(a);
+                        });
+                    }
+
+                    regionList.innerHTML = '';
+                    Object.keys(locationData).forEach(function (region) {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                        a.innerHTML = `<span>${region}</span><i class="bi bi-chevron-right"></i>`;
+
+                        if (selectedRegion && region === selectedRegion) {
+                            a.classList.add('active');
+                        }
+
+                        a.addEventListener('mouseenter', function () { renderCities(region); });
+                        a.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            renderCities(region);
+                        });
+
+                        regionList.appendChild(a);
+                    });
+
+                    if (selectedRegion) {
+                        renderCities(selectedRegion);
+                    } else {
+                        const firstRegion = Object.keys(locationData)[0];
+                        if (firstRegion) renderCities(firstRegion);
+                    }
+                })();
+            </script>
+
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="bg-white">
+                    <tr>
+                        <th class="px-4 py-3">Company</th>
+                        <th class="px-4 py-3">Title</th>
+                        <th class="px-4 py-3">Location</th>
+                        <th class="px-4 py-3">Deadline</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-end">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for opp in opportunities %}
+                    <tr class="op-row"
+                        style="cursor:pointer;"
+                        hx-get="{% url 'opp_detail' opp.id %}"
+                        hx-target="#oppDetailBody"
+                        hx-indicator="#oppDetailSpinner"
+                        data-bs-toggle="modal"
+                        data-bs-target="#oppDetailModal">
+                        <td class="px-4 py-3">
+                            <div class="d-flex align-items-center gap-2">
+                                {% with logo=opp.company_domain|company_logo_url %}
+                                {% if logo %}
+                                <img src="{{ logo }}"
+                                     width="32" height="32"
+                                     style="object-fit:contain;border-radius:6px;background:#f5f5f5;padding:3px;flex-shrink:0;"
+                                     alt="{{ opp.company }}"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                <div class="icon-box-sm" style="display:none;"><i class="bi bi-building"></i></div>
+                                {% else %}
+                                <div class="icon-box-sm"><i class="bi bi-building"></i></div>
+                                {% endif %}
+                                {% endwith %}
+                                <span class="fw-semibold">{{ opp.company|default:"-" }}</span>
+                            </div>
+                        </td>
+
+                        <td class="px-4 py-3">
+                            <div class="fw-bold">{{ opp.title }}</div>
+                            {% if opp.major %}<div class="text-secondary small">{{ opp.major }}</div>{% endif %}
+                        </td>
+
+                        <td class="px-4 py-3 text-secondary">{{ opp.location|default:"-" }}</td>
+
+                        <td class="px-4 py-3 text-secondary">
+                            {% if opp.deadline %}{{ opp.deadline|date:"M d, Y" }}{% else %}N/A{% endif %}
+                        </td>
+
+                        <td class="px-4 py-3">
+                            {% if opp.status == "open" %}
+                            <span class="badge-status badge-active">Open</span>
+                            {% elif opp.status == "closed" %}
+                            <span class="badge-status badge-applied">Closed</span>
+                            {% else %}
+                            <span class="badge-status badge-closing">{{ opp.status }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-4 py-3" onclick="event.stopPropagation()">
+                            <div class="d-flex justify-content-end align-items-center gap-2">
+
+                                <a class="btn btn-view" href="{{ opp.source_link }}" target="_blank" rel="noopener">
+                                    Apply
+                                </a>
+
+                                <!-- Bookmark toggle -->
+                                <form method="post" action="{% url 'toggle_bookmark' opp.id %}" class="m-0">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-neutral d-flex align-items-center justify-content-center"
+                                        type="submit" title="Bookmark" style="width:40px;height:40px;">
+                                        {% if bookmarked_ids and opp.id in bookmarked_ids %}
+                                        <i class="bi bi-bookmark-fill text-brand"></i>
+                                        {% else %}
+                                        <i class="bi bi-bookmark"></i>
+                                        {% endif %}
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td class="px-4 py-4 text-secondary" colspan="6">No opportunities found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 px-4 py-3 border-top"
+            style="border-color: var(--border) !important;">
+
+            <div class="text-secondary small">
+                {% if page_obj.paginator.count %}
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+                opportunities
+                {% else %}
+                No opportunities
+                {% endif %}
+            </div>
+
+            {% if page_obj.paginator.num_pages > 1 %}
+            <nav aria-label="Pagination">
+                <ul class="pagination pagination-sm mb-0">
+
+                    <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                        {% if page_obj.has_previous %}
+                        <a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}{{ extra_qs|default:'' }}"><i
+                                class="bi bi-chevron-left"></i></a>
+                        {% else %}
+                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                        {% endif %}
+                    </li>
+
+                    {% for p in page_range %}
+                    {% if p is None %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% else %}
+                    <li class="page-item {% if page_obj.number == p %}active{% endif %}">
+                        {% if page_obj.number == p %}
+                        <span class="page-link" style="background:var(--brand-blue); border-color:var(--brand-blue);">{{ p }}</span>
+                        {% else %}
+                        <a class="page-link" href="?page={{ p }}{{ extra_qs|default:'' }}">{{ p }}</a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                        {% if page_obj.has_next %}
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ extra_qs|default:'' }}"><i
+                                class="bi bi-chevron-right"></i></a>
+                        {% else %}
+                        <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                        {% endif %}
+                    </li>
+
+                </ul>
+            </nav>
+            {% endif %}
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Opportunity detail modal (HTMX loads _opp_detail.html into #oppDetailBody) -->
+<div class="modal fade" tabindex="-1" id="oppDetailModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:560px;">
+        <div class="modal-content rounded-3 overflow-hidden">
+            <div class="modal-header border-bottom px-4 py-3">
+                <h5 class="modal-title fw-bold mb-0">Opportunity Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="oppDetailBody">
+                <div class="p-5 text-center text-muted" id="oppDetailSpinner">
+                    <div class="spinner-border spinner-border-sm me-2"></div> Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Send Django CSRF token with every HTMX POST request
+    document.body.addEventListener("htmx:configRequest", function (e) {
+        e.detail.headers["X-CSRFToken"] =
+            document.cookie.match(/csrftoken=([^;]+)/)?.[1] ?? "";
+    });
+
+    // After HTMX loads the detail partial, move any nested modals to <body>
+    // so Bootstrap can manage them as top-level modals (z-index, backdrop, etc.)
+    document.body.addEventListener("htmx:afterSwap", function (e) {
+        if (e.detail.target && e.detail.target.id === "oppDetailBody") {
+            e.detail.target.querySelectorAll(".modal").forEach(function (modal) {
+                document.body.appendChild(modal);
+            });
+        }
+    });
+</script>
+{% endblock %}
